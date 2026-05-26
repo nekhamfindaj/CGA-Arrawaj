@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Suivi Constats CGA v4 — Fondation Arrawaj</title>
+<script src="xlsx.full.min.js"></script>
+<script src="chart.umd.js"></script>
+<script src="msal-browser.min.js"></script>
+<style>
+:root{
+  /* Vert Royal Arrawaj */
+  --G: #00501E;      /* vert royal foncé */
+  --G2: #006B2A;     /* vert royal moyen */
+  --GL: #E6F4EC;     /* vert clair bg */
+  --GHD: #004518;    /* vert header */
+  /* Orange Arrawaj */
+  --O: #E8840F;
+  --O2: #F59500;
+  --OL: #FEF3E8;
+  /* UI */
+  --bd: #D1FAE5;     /* border verte */
+  --text: #1A2E1A;   /* texte foncé vert */
+  --sub: #3D6B4A;    /* texte secondaire */
+  /* Statuts */
+  --elv-bg:#FEE2E2;--elv-fg:#991B1B;
+  --moy-bg:#FEF3C7;--moy-fg:#92400E;
+  --bas-bg:#D1FAE5;--bas-fg:#065F46;
+  --new-bg:#F0FDF4;--new-fg:#166534;
+  --enc-bg:#DBEAFE;--enc-fg:#1D4ED8;
+  --clo-bg:#D1FAE5;--clo-fg:#065F46;
+  --con-bg:#FEE2E2;--con-fg:#991B1B;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:var(--text);background:var(--GL);min-height:100vh}
+
+/* ── LOADING ── */
+#loading-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--GHD) 0%,var(--G2) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff}
+.ld-logo{width:68px;height:68px;border-radius:50%;background:var(--O);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:18px;box-shadow:0 4px 16px rgba(232,132,15,0.5)}
+.ld-spinner{width:30px;height:30px;border:3px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;margin-top:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SETUP ── */
+#setup-screen{display:none;min-height:100vh;background:var(--GL);padding:40px 20px}
+.setup-box{max-width:580px;margin:0 auto;background:#fff;border-radius:14px;border:2px solid var(--bd);padding:30px;text-align:center;box-shadow:0 4px 20px rgba(0,80,30,0.08)}
+.setup-logo{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--G) 0%,var(--G2) 100%);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;box-shadow:0 3px 12px rgba(0,80,30,0.3)}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--GHD) 0%,var(--G) 100%);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.25);border-bottom:2px solid var(--O)}
+.header-logo{width:36px;height:36px;border-radius:50%;background:var(--O);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 8px rgba(232,132,15,0.4)}
+.header-title{color:#fff;margin-left:10px}
+.header-title h1{font-size:14px;font-weight:700;letter-spacing:0.3px}
+.header-title p{font-size:10px;opacity:0.7;margin-top:1px}
+.header-left{display:flex;align-items:center}
+.header-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+
+/* ── BUTTONS ── */
+.btn{padding:6px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:all 0.12s;white-space:nowrap}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:linear-gradient(135deg,var(--O) 0%,var(--O2) 100%);color:#fff;box-shadow:0 2px 8px rgba(232,132,15,0.35)}
+.btn-secondary{background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.25)}
+.btn-outline{background:#fff;border:1.5px solid var(--G2);color:var(--G2)}
+.btn-danger{background:#DC2626;color:#fff}
+.btn-success{background:var(--G2);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+
+/* ── USER BADGE ── */
+.user-badge{background:rgba(255,255,255,0.15);color:#fff;padding:4px 11px;border-radius:20px;font-size:11px;display:flex;align-items:center;gap:5px;border:1px solid rgba(255,255,255,0.2)}
+.user-badge.admin{background:var(--O);color:#fff;border-color:var(--O2)}
+
+/* ── NAV TABS ── */
+.nav-tabs{background:#fff;border-bottom:2px solid var(--bd);display:flex;padding:0 20px;position:sticky;top:55px;z-index:99;box-shadow:0 1px 4px rgba(0,80,30,0.06)}
+.nav-tab{padding:11px 16px;cursor:pointer;font-size:12px;color:var(--sub);border-bottom:3px solid transparent;transition:all 0.15s;display:flex;align-items:center;gap:5px;white-space:nowrap;user-select:none;margin-bottom:-2px}
+.nav-tab:hover{color:var(--G2);background:var(--GL)}
+.nav-tab.active{color:var(--G);font-weight:600;border-bottom-color:var(--O)}
+.count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:var(--O);color:#fff;font-size:10px;font-weight:700;padding:0 4px;margin-left:3px}
+
+/* ── MAIN ── */
+.main{padding:16px 20px;max-width:1440px;margin:0 auto}
+
+/* ── CARDS ── */
+.card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,80,30,0.06)}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:600;color:var(--G)}
+
+/* ── KPI ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:14px}
+.kpi-card{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s;box-shadow:0 1px 4px rgba(0,80,30,0.05)}
+.kpi-card:hover{background:var(--GL);border-color:var(--G2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,80,30,0.12)}
+.kpi-label{font-size:10px;color:var(--sub);margin-bottom:5px;font-weight:500}
+.kpi-value{font-size:26px;font-weight:700;color:var(--G)}
+.kpi-sub{font-size:10px;color:#9CA3AF;margin-top:2px}
+
+/* ── PROGRESS ── */
+.progress-bar-wrap{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.progress-section{flex:1}
+.progress-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;color:var(--sub);font-weight:500}
+.progress-track{background:#E5E7EB;border-radius:99px;height:8px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width 0.6s;background:linear-gradient(90deg,var(--G2) 0%,var(--O) 100%)}
+.progress-stats{display:flex;gap:14px;font-size:11px;color:var(--sub);white-space:nowrap}
+
+/* ── CHART GRID ── */
+.chart-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-eleve{background:var(--elv-bg);color:var(--elv-fg)}
+.b-moyen{background:var(--moy-bg);color:var(--moy-fg)}
+.b-bas{background:var(--bas-bg);color:var(--bas-fg)}
+.b-nouveau{background:var(--new-bg);color:var(--new-fg)}
+.b-encours{background:var(--enc-bg);color:var(--enc-fg)}
+.b-cloture{background:var(--clo-bg);color:var(--clo-fg)}
+.b-conteste{background:var(--con-bg);color:var(--con-fg)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border:1.5px solid var(--bd);border-radius:10px;box-shadow:0 1px 4px rgba(0,80,30,0.04)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead tr{background:linear-gradient(90deg,var(--GL) 0%,#F0FDF4 100%)}
+th{padding:9px 10px;text-align:left;font-weight:600;font-size:10px;color:var(--G);border-bottom:2px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--O)}
+td{padding:7px 10px;border-bottom:1px solid #F0FDF4;vertical-align:middle;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F0FDF4}
+tr.selected td{background:var(--GL) !important;border-left:3px solid var(--G2)}
+.td-clip{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.statut-sel{padding:3px 6px;border-radius:5px;border:1px solid var(--bd);font-size:10px;cursor:pointer;outline:none;color:var(--text);background:#fff}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input[type=text],input[type=search],select,textarea{padding:6px 10px;border:1.5px solid #D1D5DB;border-radius:7px;font-size:12px;color:var(--text);background:#fff;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 3px rgba(0,107,42,0.1)}
+.srch-wrap{position:relative}
+.srch-wrap input{padding-left:28px;width:200px}
+.srch-ico{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:12px}
+
+/* ── SIDEBAR ── */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,30,10,0.4);z-index:200;backdrop-filter:blur(2px)}
+.sb-overlay.open{display:block}
+.sidebar{position:fixed;top:0;right:-490px;width:470px;height:100vh;background:#fff;z-index:201;box-shadow:-6px 0 30px rgba(0,80,30,0.15);display:flex;flex-direction:column;transition:right 0.25s ease;overflow:hidden;border-left:3px solid var(--G2)}
+.sidebar.open{right:0}
+
+/* ── SIDEBAR HEADER / BODY ── */
+.sb-hd{background:linear-gradient(135deg,var(--GHD) 0%,var(--G) 100%);padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--O)}
+.sb-body{flex:1;overflow-y:auto;padding:16px 18px}
+.sb-section{margin-bottom:16px}
+.sb-section-title{font-size:10px;font-weight:700;color:var(--G);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)}
+.sb-field{margin-bottom:10px}
+.sb-label{font-size:11px;color:var(--sub);margin-bottom:3px;font-weight:500}
+.sb-value{font-size:12px;color:var(--text);background:var(--GL);padding:6px 10px;border-radius:6px;border:1px solid var(--bd)}
+.sb-footer{padding:12px 18px;border-top:2px solid var(--bd);display:flex;gap:8px;background:var(--GL)}
+.sb-saved{font-size:10px;color:var(--G2);font-weight:600}
+
+/* ── ALERTS ── */
+.alert{padding:8px 12px;border-radius:7px;font-size:12px;margin-bottom:8px;border-left:3px solid}
+.al-info{background:#EFF6FF;color:#1D4ED8;border-color:#3B82F6}
+.al-success{background:var(--GL);color:var(--G);border-color:var(--G2)}
+.al-error{background:#FEF2F2;color:#991B1B;border-color:#EF4444}
+.al-warn{background:#FFFBEB;color:#92400E;border-color:#F59E0B}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--G);color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:500;z-index:9999;display:none;animation:fadeIn 0.2s;box-shadow:0 4px 16px rgba(0,80,30,0.3);border-left:4px solid var(--O)}
+.toast.err{background:#DC2626;border-color:#FCA5A5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── ADMIN CARDS ── */
+.rga-card{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;transition:all 0.15s;box-shadow:0 1px 4px rgba(0,80,30,0.04)}
+.rga-card:hover{background:var(--GL);border-color:var(--G2)}
+.rga-name{font-size:13px;font-weight:600;color:var(--G)}
+.rga-meta{font-size:11px;color:var(--sub);margin-top:2px}
+
+/* ── SETUP LOG ── */
+#setup-log{max-height:200px;overflow-y:auto;margin-top:12px;text-align:left}
+
+/* ── ANALYSE RGA ── */
+.rga-row td:first-child{font-weight:600;color:var(--G)}
+.pbar{display:flex;align-items:center;gap:6px}
+.pbar-track{flex:1;background:#E5E7EB;border-radius:99px;height:5px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--G2) 0%,var(--O) 100%)}
+
+/* ── DASHBOARD PERIOD BUTTONS ── */
+.dp-btn{background:#fff;color:var(--sub);border:1.5px solid var(--bd);transition:all 0.15s}
+.dp-btn:hover{background:var(--GL);color:var(--G);border-color:var(--G2)}
+.dp-btn.active-dp{background:var(--G);color:#fff;border-color:var(--G);box-shadow:0 2px 6px rgba(0,80,30,0.25)}
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING ══ -->
+<div id="loading-screen">
+  <div class="ld-logo">🛡️</div>
+  <div style="font-size:17px;font-weight:600;margin-bottom:4px">Suivi Constats CGA</div>
+  <div style="font-size:11px;opacity:0.65">Fondation Arrawaj</div>
+  <div class="ld-spinner"></div>
+  <div id="ld-msg" style="font-size:11px;opacity:0.55;margin-top:10px">Initialisation...</div>
+</div>
+
+<!-- ══ LOGIN MSAL ══ -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--G);align-items:center;justify-content:center;z-index:9998;flex-direction:column">
+  <div style="text-align:center;color:#fff;padding:32px">
+    <div style="width:72px;height:72px;border-radius:50%;background:var(--O);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px">🛡️</div>
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:6px">Suivi Constats CGA</h1>
+    <p style="font-size:13px;opacity:0.7;margin-bottom:32px">Fondation Arrawaj</p>
+    <button onclick="loginMicrosoft()" style="background:#fff;color:var(--G);border:none;border-radius:8px;padding:14px 32px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" width="18">
+      Se connecter avec Microsoft
+    </button>
+    <div id="login-err" style="display:none;margin-top:14px;background:rgba(255,255,255,0.12);border-radius:6px;padding:10px 16px;font-size:12px;color:#FCA5A5"></div>
+    <p style="font-size:11px;opacity:0.45;margin-top:24px">Utilisez votre compte @fondation-arrawaj.ma</p>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div id="setup-screen">  <div class="setup-box">
+    <div class="setup-logo">🛡️</div>
+    <h2 style="font-size:19px;font-weight:600;color:var(--G);margin-bottom:6px">Configuration initiale</h2>
+    <p style="color:#6B7280;font-size:12px;margin-bottom:18px">Les listes SharePoint doivent être créées une seule fois.</p>
+    <div class="card" style="text-align:left">
+      <div class="card-title" style="margin-bottom:10px">Listes à créer sur <strong>https://fndaj.sharepoint.com/sites/CGA</strong></div>
+      <div style="font-size:12px;color:#374151;line-height:2">
+        <div>📋 <strong>CGA_Constats</strong> — stockage de tous les constats (25 colonnes)</div>
+        <div>👥 <strong>CGA_RGA_Users</strong> — mapping RGA ↔ utilisateurs M365</div>
+      </div>
+    </div>
+    <div id="setup-log" style="text-align:left;max-height:200px;overflow-y:auto;margin-bottom:14px"></div>
+    <button id="btn-setup" class="btn btn-primary" style="width:100%;justify-content:center;padding:10px" onclick="runSetup()">
+      ⚙️ Créer les listes automatiquement
+    </button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="main-app" style="display:none">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">🛡️</div>
+      <div class="header-title">
+        <h1>Suivi Constats CGA</h1>
+        <p id="hd-sub">Fondation Arrawaj</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="user-badge" class="user-badge">—</div>
+      <button id="btn-refresh" class="btn btn-secondary btn-sm" onclick="refreshData()" title="Actualiser">🔄</button>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" title="Se déconnecter" style="font-size:11px">⎋ Quitter</button>
+      <button id="btn-export" class="btn btn-secondary btn-sm" onclick="exportExcel()">📥 Export</button>
+      <button id="btn-synthese" class="btn btn-secondary btn-sm" onclick="exportSynthese()" style="display:none">📊 Synthèse</button>
+      <button id="btn-global" class="btn btn-secondary btn-sm" onclick="exportGlobal()" style="display:none" title="Export structuré pour script Python notifications">📤 Export Global</button>
+      <button id="btn-import" class="btn btn-primary" onclick="document.getElementById('file-input').click()" style="display:none">📥 Importer canevas</button>
+      <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="importCanevas(this)">
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="nav-tabs">
+    <div class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Tableau de bord</div>
+    <div class="nav-tab" data-tab="constats" onclick="switchTab('constats')">
+      📋 Constats <span id="cnt-badge" class="count-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-tab admin-tab" data-tab="rga" onclick="switchTab('rga')" style="display:none">🏢 Analyse RGA</div>
+    <div class="nav-tab admin-tab" data-tab="admin" onclick="switchTab('admin')" style="display:none">⚙️ Administration</div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Import progress -->
+    <div id="imp-bar" class="imp-progress">
+      <div id="imp-txt" style="font-size:12px;color:var(--G)">Import en cours...</div>
+      <div class="imp-track"><div class="imp-fill" id="imp-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div id="tab-dashboard">
+      <!-- Filtre période dashboard -->
+      <div style="background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,80,30,0.05)">
+        <span style="font-size:12px;font-weight:600;color:var(--G)">📅 Période analysée :</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button onclick="setDashPeriod('all')"    id="dp-all"    class="btn btn-sm dp-btn active-dp">Tout</button>
+          <button onclick="setDashPeriod('7j')"     id="dp-7j"     class="btn btn-sm dp-btn">7 jours</button>
+          <button onclick="setDashPeriod('30j')"    id="dp-30j"    class="btn btn-sm dp-btn">30 jours</button>
+          <button onclick="setDashPeriod('mois')"   id="dp-mois"   class="btn btn-sm dp-btn">Ce mois</button>
+          <button onclick="setDashPeriod('trim')"   id="dp-trim"   class="btn btn-sm dp-btn">Trimestre</button>
+          <button onclick="setDashPeriod('annee')"  id="dp-annee"  class="btn btn-sm dp-btn">Année</button>
+          <button onclick="setDashPeriod('custom')" id="dp-custom" class="btn btn-sm dp-btn">Personnalisé</button>
+        </div>
+        <div id="dp-custom-dates" style="display:none;align-items:center;gap:6px">
+          <input type="date" id="dp-date-from" onchange="renderDashboard()" style="font-size:11px;padding:4px 8px">
+          <span style="font-size:11px;color:var(--sub)">→</span>
+          <input type="date" id="dp-date-to" onchange="renderDashboard()" style="font-size:11px;padding:4px 8px">
+        </div>
+        <span id="dp-label" style="margin-left:auto;font-size:11px;font-weight:600;color:var(--G);background:var(--GL);padding:3px 10px;border-radius:12px;border:1px solid var(--bd)"></span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-section">
+          <div class="progress-label"><span>Taux de clôture</span><span id="pct-val" style="font-weight:600">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="pct-fill" style="width:0%"></div></div>
+        </div>
+        <div class="progress-stats" id="pct-stats">
+          <span><strong id="ps-clo" style="color:#10B981">0</strong> clôturés</span>
+          <span><strong id="ps-enc" style="color:#3B82F6">0</strong> en cours</span>
+          <span><strong id="ps-new" style="color:#9CA3AF">0</strong> nouveaux</span>
+          <span><strong id="ps-con" style="color:#EF4444">0</strong> contestés</span>
+        </div>
+      </div>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <!-- Chart évolution temporelle -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">
+          <span class="card-title">📈 Évolution des constats</span>
+          <select id="ch-evol-group" onchange="renderCharts()" style="font-size:11px;padding:3px 8px;border:1px solid var(--bd);border-radius:5px;color:var(--G)">
+            <option value="mois">Par mois</option>
+            <option value="semaine">Par semaine</option>
+            <option value="trimestre">Par trimestre</option>
+          </select>
+        </div>
+        <div style="height:200px;position:relative"><canvas id="ch-evol"></canvas></div>
+      </div>
+      <div class="chart-grid-2">
+        <div class="card"><div class="card-hd"><span class="card-title">Répartition par criticité</span></div><div style="height:190px;position:relative"><canvas id="ch-crit"></canvas></div></div>
+        <div class="card"><div class="card-hd"><span class="card-title">Statut de traitement</span></div><div style="height:190px;position:relative"><canvas id="ch-stat"></canvas></div></div>
+      </div>
+      <div class="card"><div class="card-hd"><span class="card-title">Top familles de constats</span><span style="font-size:10px;color:#9CA3AF">Top 8</span></div><div id="ch-fam-wrap" style="position:relative"><canvas id="ch-fam"></canvas></div></div>
+      <div class="chart-grid-2">
+        <div class="card"><div class="card-hd"><span class="card-title">Constats par région</span></div><div style="height:200px;position:relative"><canvas id="ch-reg"></canvas></div></div>
+        <div class="card"><div class="card-hd"><span class="card-title">Top agences</span></div><div id="ch-agc-wrap" style="position:relative"><canvas id="ch-agc"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ── CONSTATS TABLE ── -->
+    <div id="tab-constats" style="display:none">
+      <div class="filters">
+        <div class="srch-wrap"><span class="srch-ico">🔍</span><input type="search" id="f-q" placeholder="Rechercher..." oninput="applyFilters()"></div>
+        <select id="f-region" onchange="applyFilters()"><option value="">Toutes régions</option></select>
+        <select id="f-rga" onchange="applyFilters()"><option value="">Tous RGA</option></select>
+        <select id="f-famille" onchange="applyFilters()"><option value="">Toutes familles</option></select>
+        <select id="f-crit" onchange="applyFilters()"><option value="">Toutes criticités</option><option>Élevé</option><option>Moyen</option><option>Bas</option></select>
+        <select id="f-statut" onchange="applyFilters()"><option value="">Tous statuts</option><option>Nouveau</option><option>En cours</option><option>Clôturé</option><option>Contesté</option></select>
+      </div>
+      <div class="filters" style="margin-top:-4px">
+        <span style="font-size:11px;color:var(--sub);font-weight:500">📅 Période :</span>
+        <select id="f-periode" onchange="applyPeriode()" style="font-size:11px">
+          <option value="">Toutes les dates</option>
+          <option value="7j">7 derniers jours</option>
+          <option value="30j">30 derniers jours</option>
+          <option value="mois">Ce mois</option>
+          <option value="trim">Ce trimestre</option>
+          <option value="annee">Cette année</option>
+          <option value="custom">Période personnalisée</option>
+        </select>
+        <span id="f-custom-dates" style="display:none;align-items:center;gap:6px">
+          <input type="date" id="f-date-from" onchange="applyFilters()" style="font-size:11px;padding:4px 8px">
+          <span style="font-size:11px;color:var(--sub)">→</span>
+          <input type="date" id="f-date-to" onchange="applyFilters()" style="font-size:11px;padding:4px 8px">
+        </span>
+        <span id="f-source-badge" style="display:none;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--OL);color:var(--O)"></span>
+        <button class="btn btn-outline btn-sm" onclick="resetFilters()">✕ Réinitialiser</button>
+        <span id="f-count" style="margin-left:auto;font-size:11px;color:var(--sub)"></span>
+        <button class="btn btn-outline btn-sm" onclick="exportExcel()">📥 Export</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th onclick="sortBy('DateEffective')">📅 Date <span id="s-DateEffective"></span></th>
+            <th onclick="sortBy('Title')">Réf. <span id="s-Title"></span></th>
+            <th onclick="sortBy('Region')">Région <span id="s-Region"></span></th>
+            <th onclick="sortBy('CodeRGA')">RGA <span id="s-CodeRGA"></span></th>
+            <th onclick="sortBy('Agence')">Agence <span id="s-Agence"></span></th>
+            <th onclick="sortBy('FamilleConstat')">Famille <span id="s-FamilleConstat"></span></th>
+            <th onclick="sortBy('LibelleConstat')">Constat <span id="s-LibelleConstat"></span></th>
+            <th onclick="sortBy('Criticite')">Criticité <span id="s-Criticite"></span></th>
+            <th onclick="sortBy('StatutTraitement')">Statut <span id="s-StatutTraitement"></span></th>
+            <th></th>
+          </tr></thead>
+          <tbody id="tbl-body"><tr><td colspan="10" class="no-data">Chargement...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RGA ANALYSIS ── -->
+    <div id="tab-rga" style="display:none">
+      <div class="card">
+        <div class="card-hd"><span class="card-title">Vue consolidée par RGA</span><button class="btn btn-outline btn-sm" onclick="exportRGA()">📥 Export</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr style="background:var(--G)">
+              <th style="color:#fff;text-align:left">RGA</th><th style="color:#fff;text-align:left">Région</th>
+              <th style="color:#fff;text-align:center">Total</th><th style="color:#fff;text-align:center">Élevé</th><th style="color:#fff;text-align:center">Moyen</th><th style="color:#fff;text-align:center">Bas</th>
+              <th style="color:#fff;text-align:center">Nouveau</th><th style="color:#fff;text-align:center">En cours</th><th style="color:#fff;text-align:center">Clôturé</th><th style="color:#fff;text-align:center">Contesté</th>
+              <th style="color:#fff">Taux clôture</th>
+            </tr></thead>
+            <tbody id="rga-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card"><div class="card-hd"><span class="card-title">Volume par RGA</span></div><div id="ch-rga-wrap" style="position:relative"><canvas id="ch-rga"></canvas></div></div>
+    </div>
+
+    <!-- ── ADMIN ── -->
+    <div id="tab-admin" style="display:none">
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-hd"><span class="card-title">👥 Mapping RGA → Utilisateurs</span><button class="btn btn-primary btn-sm" onclick="showAddUser()">+ Ajouter</button></div>
+          <div id="rga-users-list"><div class="no-data">Chargement...</div></div>
+          <div id="add-user-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #F3F4F6">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px">
+              <div><div class="fld-lbl" style="margin-bottom:3px">Code RGA</div><input type="text" id="nu-code" placeholder="Ex: RGA_DAKHLA" style="width:100%"></div>
+              <div><div class="fld-lbl" style="margin-bottom:3px">Email M365</div><input type="text" id="nu-email" placeholder="prenom.nom@fondation-arrawaj.ma" style="width:100%"></div>
+              <div><div class="fld-lbl" style="margin-bottom:3px">Nom d'affichage</div><input type="text" id="nu-nom" placeholder="Nom du RGA" style="width:100%"></div>
+              <div><div class="fld-lbl" style="margin-bottom:3px">Région</div><input type="text" id="nu-region" placeholder="Ex: R15" style="width:100%"></div>
+            </div>
+            <div style="display:flex;gap:7px">
+              <button class="btn btn-primary btn-sm" onclick="saveNewUser()">💾 Enregistrer</button>
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('add-user-form').style.display='none'">Annuler</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-title">ℹ️ Paramètres</span></div>
+          <div style="font-size:12px;line-height:2;color:#374151">
+            <div>📍 Site : <strong id="inf-site">—</strong></div>
+            <div>👑 Admin : <strong>hicham.nekhla@fondation-arrawaj.ma</strong></div>
+            <div>📋 Liste constats : <strong>CGA_Constats</strong></div>
+            <div>👥 Liste mapping : <strong>CGA_RGA_Users</strong></div>
+            <div id="inf-total" style="margin-top:6px;color:#6B7280"></div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="refreshData()">🔄 Actualiser</button>
+            <button class="btn btn-sm" style="color:#DC2626;border:1px solid #DC2626;background:none" onclick="clearData()">🗑️ Vider toutes les données</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ DETAIL SIDEBAR ══ -->
+<div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sb-hd">
+    <div><h3 id="sb-ref">—</h3><p id="sb-meta">—</p></div>
+    <button class="sb-close" onclick="closeSidebar()">×</button>
+  </div>
+  <div class="sb-body" id="sb-body"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Capture toutes les erreurs JS avec stack trace
+window.onerror = function(msg, src, line, col, err) {
+  const info = `❌ ${msg}\n📍 Ligne ${line}:${col}\n📄 ${src?.split('/').pop()}\n\n${err?.stack||''}`;
+  document.getElementById('ld-msg') && (document.getElementById('ld-msg').innerHTML = 
+    `<div style="font-size:10px;text-align:left;background:rgba(255,0,0,0.2);padding:8px;border-radius:4px;max-width:400px;word-break:break-all;white-space:pre-wrap">${info}</div>`);
+  console.error('GLOBAL ERROR:', info);
+  return false;
+};
+window.onunhandledrejection = function(e) {
+  window.onerror(e.reason?.message||String(e.reason), 'promise', 0, 0, e.reason);
+};
+// ══════════════════════════════════════════════════════════
+//  MSAL CONFIG — Azure AD App Registration
+// ══════════════════════════════════════════════════════════
+const MSAL_CFG = {
+  auth: {
+    clientId:    '725c7e66-a235-4672-b09d-3eede78c1b1c',
+    authority:   'https://login.microsoftonline.com/93d6c57e-29a2-4b04-847c-6915c6a388a0',
+    redirectUri: 'https://nekhamfindaj.github.io/CGA-Arrawaj/',
+  },
+  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
+};
+const msalInstance = new msal.PublicClientApplication(MSAL_CFG);
+const SP_SCOPE = 'https://fndaj.sharepoint.com/AllSites.Write';
+
+// ══════════════════════════════════════════════════════════
+//  APP CONFIG
+// ══════════════════════════════════════════════════════════
+const CFG = {
+  siteUrl:    'https://fndaj.sharepoint.com/sites/CGA',
+  adminEmail: 'hicham.nekhla@fondation-arrawaj.ma',
+  lists: { constats: 'CGA_Constats', rgaUsers: 'CGA_RGA_Users' }
+};
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+const S = {
+  user: null, email: '', role: null, userRGA: null,
+  constats: [], filtered: [], rgaUsers: [],
+  digest: null, digestExp: 0,
+  tab: 'dashboard', sortCol: 'DateEffective', sortDir: 'desc', dashPeriod: 'all',
+  selConstat: null, charts: {}
+};
+
+// ══════════════════════════════════════════════════════════
+//  MSAL — AUTH TOKEN
+// ══════════════════════════════════════════════════════════
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  if (!accounts.length) {
+    await msalInstance.loginRedirect({ scopes: ['openid', 'profile', 'email', SP_SCOPE] });
+    return null;
+  }
+  // Silent avec timeout 5s (évite blocage iframe invisible)
+  try {
+    const res = await Promise.race([
+      msalInstance.acquireTokenSilent({ scopes: [SP_SCOPE], account: accounts[0] }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+    ]);
+    return res.accessToken;
+  } catch {
+    // Redirect si silent échoue ou timeout
+    await msalInstance.acquireTokenRedirect({ scopes: [SP_SCOPE], account: accounts[0] });
+    return null;
+  }
+}
+
+async function loginMicrosoft() {
+  const btns = document.querySelectorAll('button[onclick="loginMicrosoft()"]');
+  btns.forEach(b => { b.textContent = 'Redirection vers Microsoft...'; b.disabled = true; });
+  try {
+    console.log('Login redirect...');
+    await msalInstance.loginRedirect({
+      scopes: ['openid', 'profile', 'email', SP_SCOPE],
+      redirectUri: 'https://nekhamfindaj.github.io/CGA-Arrawaj/'
+    });
+  } catch(e) {
+    console.error('Login error:', e);
+    btns.forEach(b => { b.textContent = '❌ ' + e.message; b.disabled = false; });
+    const errEl = document.getElementById('login-err');
+    if (errEl) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  }
+}
+
+async function logout() {
+  await msalInstance.logoutRedirect({ postLogoutRedirectUri: 'https://nekhamfindaj.github.io/CGA-Arrawaj/' });
+}
+
+
+// ══════════════════════════════════════════════════════════
+// Avec OAuth Bearer tokens, X-RequestDigest n'est PAS requis
+async function spGet(path, sel = '', flt = '') {
+  const token = await getToken();
+  if (!token) return { value: [] };
+  let url = `${CFG.siteUrl}/_api/${path}?$top=5000`;
+  if (sel) url += `&$select=${sel}`;
+  if (flt) url += `&$filter=${encodeURIComponent(flt)}`;
+  const r = await fetch(url, {
+    headers: { Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}` }
+  });
+  if (!r.ok) throw new Error(`GET ${path}: ${r.status}`);
+  return r.json();
+}
+
+async function spPost(path, data, verbose = false) {
+  const token = await getToken();
+  if (!token) return null;
+  const ct = verbose ? 'application/json;odata=verbose' : 'application/json;odata=nometadata';
+  const r = await fetch(`${CFG.siteUrl}/_api/${path}`, {
+    method: 'POST',
+    headers: { Accept: ct, 'Content-Type': ct, Authorization: `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok && r.status !== 204) { const t = await r.text(); throw new Error(`POST ${path}: ${r.status} — ${t.substring(0,200)}`); }
+  try { return await r.json(); } catch { return null; }
+}
+
+async function spPatch(path, data) {
+  const token = await getToken();
+  if (!token) return false;
+  const r = await fetch(`${CFG.siteUrl}/_api/${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json;odata=nometadata',
+      'Content-Type': 'application/json;odata=nometadata',
+      Authorization: `Bearer ${token}`,
+      'X-HTTP-Method': 'MERGE', 'IF-MATCH': '*'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok && r.status !== 204) throw new Error(`PATCH ${path}: ${r.status}`);
+  return true;
+}
+
+async function spDelete(path) {
+  const token = await getToken();
+  if (!token) return;
+  await fetch(`${CFG.siteUrl}/_api/${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}`,
+      'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*'
+    }
+  });
+}
+
+async function listExists(name) {
+  try {
+    const token = await getToken();
+    if (!token) return false;
+    // Vérifier que la liste ET ses colonnes clés existent
+    const checkCol = name === CFG.lists.rgaUsers ? 'EmailUtilisateur' : 'FamilleConstat';
+    const r = await fetch(
+      `${CFG.siteUrl}/_api/web/lists/getbytitle('${name}')/fields?$filter=InternalName eq '${checkCol}'`,
+      { headers: { Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}` } }
+    );
+    if (!r.ok) return false;
+    const d = await r.json();
+    return d.value?.length > 0; // false si colonne absente → lance setup
+  } catch { return false; }
+}
+
+async function runSetup() {
+  const btn = document.getElementById('btn-setup');
+  btn.disabled = true; btn.textContent = '⏳ Création en cours...';
+  const log = document.getElementById('setup-log');
+  const addLog = (msg, type = 'info') => { log.innerHTML += `<div class="alert al-${type}">${msg}</div>`; log.scrollTop = 9999; };
+
+  try {
+    addLog('📋 Création de la liste CGA_Constats...');
+    await createConstatsList();
+    addLog('✅ CGA_Constats créée', 'success');
+
+    addLog('👥 Création de la liste CGA_RGA_Users...');
+    await createRGAUsersList();
+    addLog('✅ CGA_RGA_Users créée', 'success');
+
+    // Add admin
+    await spPost(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, {
+      Title: 'ADMIN', EmailUtilisateur: CFG.adminEmail, NomAffichage: 'Hicham Nekhla — Central CGA', Region: 'Central'
+    });
+
+    addLog('✅ Configuration terminée ! Rechargement dans 3s...', 'success');
+    setTimeout(() => location.reload(), 3000);
+  } catch (e) {
+    addLog('❌ Erreur: ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = '⚙️ Réessayer';
+  }
+}
+
+async function createConstatsList() {
+  // Créer la liste — ignorer l'erreur si elle existe déjà
+  try {
+    await spPost('web/lists', {
+      __metadata: { type: 'SP.List' }, Title: CFG.lists.constats, BaseTemplate: 100,
+      Description: 'Constats CGA — Fondation Arrawaj'
+    }, true);
+  } catch(e) { console.log('Liste CGA_Constats existe déjà, ajout des colonnes...'); }
+
+  const base = `web/lists/getbytitle('${CFG.lists.constats}')/fields`;
+  const addField = async (data) => { try { await spPost(base, data, true); } catch {} };
+
+  for (const f of ['DateConstat','Region','CodeRGA','Agence','Acteurs','NomPrenom','CINClient','PieceJointeCGA','EntitesConcernes','ActionAgregee','PiecesJustificatives','FichierSource','ModifiePar','StatutCanevas','FamilleConstat']) {
+    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 255 });
+  }
+  for (const f of ['LibelleConstat','RefProcedure']) {
+    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 512 });
+  }
+  for (const f of ['DetailAnomalie','RecommandationCGA','ActionsMesures','ArgumentsCommentaires','RetoursDR','ActionsDelais']) {
+    await addField({ __metadata: { type: 'SP.FieldMultiLineText' }, FieldTypeKind: 3, Title: f, NumberOfLines: 6 });
+  }
+  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'Criticite',
+    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['Élevé','Moyen','Bas','Non défini'] }, DefaultValue: 'Non défini' });
+  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'StatutTraitement',
+    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['Nouveau','En cours','Clôturé','Contesté'] }, DefaultValue: 'Nouveau' });
+  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'ConfirmationConstat',
+    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['','Confirmé','Infirmé','En attente'] }, DefaultValue: '' });
+}
+
+async function createRGAUsersList() {
+  try {
+    await spPost('web/lists', { __metadata: { type: 'SP.List' }, Title: CFG.lists.rgaUsers, BaseTemplate: 100 }, true);
+  } catch(e) { console.log('Liste CGA_RGA_Users existe déjà, ajout des colonnes...'); }
+  const base = `web/lists/getbytitle('${CFG.lists.rgaUsers}')/fields`;
+  const addField = async (data) => { try { await spPost(base, data, true); } catch {} };
+  for (const f of ['EmailUtilisateur','NomAffichage','Region']) {
+    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 255 });
+  }
+}
+
+// ══════════════════════════════════
+//  AUTH + ROLE
+// ══════════════════════════════════
+async function getUser() {
+  // Compatibilité — retourne S.user déjà défini par MSAL
+  return S.user;
+}
+
+async function detectRole() {
+  // Utilise le compte MSAL directement (pas besoin de S.user préalable)
+  const accounts = msalInstance.getAllAccounts();
+  if (!accounts.length) { S.role = 'none'; return; }
+  const account = accounts[0];
+  const email = (account.username || '').toLowerCase();
+  S.email = email;
+  S.user = { Title: account.name || email, Email: email, LoginName: email };
+
+  if (email === CFG.adminEmail.toLowerCase() ||
+      email.includes(CFG.adminEmail.split('@')[0].toLowerCase())) {
+    S.role = 'admin'; return;
+  }
+  try {
+    const d = await spGet(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`,
+      'Id,Title,EmailUtilisateur,NomAffichage,Region',
+      `EmailUtilisateur eq '${email}'`);
+    if (d.value?.length > 0) { S.role = 'rga'; S.userRGA = d.value[0]; }
+    else { S.role = 'none'; S.userRGA = null; }
+  } catch { S.role = 'none'; }
+}
+
+// ══════════════════════════════════
+//  DATA
+// ══════════════════════════════════
+// Pas de $select strict pour éviter 400 si colonnes manquantes
+async function loadConstats() {
+  if (S.role === 'rga' && !S.userRGA) { S.constats = []; return; }
+  let filter = '';
+  if (S.role === 'rga' && S.userRGA) filter = `CodeRGA eq '${S.userRGA.Title}'`;
+  const d = await spGet(`web/lists/getbytitle('${CFG.lists.constats}')/items`, '', filter);
+  S.constats = (d.value || []).map(c => {
+    // DateEffective : DateConstat si dispo, sinon Modified (date de chargement)
+    const dateConstat = c.DateConstat || '';
+    const dateModif   = c.Modified ? new Date(c.Modified).toLocaleDateString('fr-FR') : '';
+    const dateEffective = dateConstat || dateModif;
+    // Convertir en objet Date pour tri/filtre
+    const toDate = (str) => {
+      if (!str) return null;
+      const p = str.split('/');
+      if (p.length === 3) return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+      return new Date(str);
+    };
+    return {
+      ...c,
+      StatutTraitement: c.StatutTraitement || 'Nouveau',
+      Criticite: c.Criticite || 'Non défini',
+      DateEffective: dateEffective,
+      DateEffectiveObj: toDate(dateEffective),
+      DateSource: dateConstat ? 'constat' : (dateModif ? 'chargement' : '')
+    };
+  });
+}
+
+async function loadRGAUsers() {
+  const d = await spGet(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, 'Id,Title,EmailUtilisateur,NomAffichage,Region');
+  S.rgaUsers = d.value || [];
+}
+
+// ══════════════════════════════════
+//  IMPORT
+// ══════════════════════════════════
+const xlDate = v => typeof v === 'number' ? new Date((v-25569)*86400000).toLocaleDateString('fr-FR') : String(v||'');
+const normCrit = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')) return 'Élevé'; if(s.includes('moy')) return 'Moyen'; if(s.includes('bas')) return 'Bas'; return 'Non défini'; };
+
+async function importCanevas(input) {
+  const file = input.files[0]; if (!file) return;
+  const bar = document.getElementById('imp-bar');
+  const txt = document.getElementById('imp-txt');
+  const fill = document.getElementById('imp-fill');
+  bar.classList.add('on'); txt.textContent = `Lecture de "${file.name}"...`; fill.style.width='5%';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      let hi = 1;
+      for (let i=0;i<Math.min(5,rows.length);i++) {
+        if (rows[i].some(c=>/datedeconstat|date.*constat/i.test(String(c)))) { hi=i; break; }
+        if (rows[i].some(c=>/^r[eé]gion$/i.test(String(c).trim()))) { hi=i; break; }
+      }
+      const dataRows = rows.slice(hi+1).filter(r=>r.some(c=>c!==''&&c!=null));
+      const total = dataRows.length;
+      txt.textContent = `Import de ${total} constats depuis "${file.name}"...`;
+      fill.style.width = '15%';
+
+      let done = 0;
+      const bsz = 4; // batch size (parallel requests)
+      for (let i=0;i<dataRows.length;i+=bsz) {
+        const batch = dataRows.slice(i,i+bsz);
+        await Promise.all(batch.map(r => spPost(`web/lists/getbytitle('${CFG.lists.constats}')/items`, {
+          Title: String(r[1]||'').substring(0,255),
+          DateConstat: xlDate(r[0]),
+          Region: String(r[2]||'').substring(0,255),
+          CodeRGA: String(r[3]||'').substring(0,255),
+          Agence: String(r[4]||'').substring(0,255),
+          Acteurs: String(r[5]||'').substring(0,255),
+          NomPrenom: String(r[6]||'').substring(0,255),
+          LibelleConstat: String(r[7]||'').substring(0,512),
+          FamilleConstat: String(r[8]||'').substring(0,255),
+          DetailAnomalie: String(r[9]||''),
+          CINClient: String(r[10]||'').substring(0,255),
+          RefProcedure: String(r[11]||'').substring(0,512),
+          Criticite: normCrit(r[12]),
+          PieceJointeCGA: String(r[13]||'').substring(0,255),
+          RecommandationCGA: String(r[14]||''),
+          ActionsMesures: String(r[15]||''),
+          EntitesConcernes: String(r[16]||'').substring(0,255),
+          StatutCanevas: String(r[17]||'').substring(0,255),
+          RetoursDR: String(r[18]||''),
+          ConfirmationConstat: String(r[19]||'').substring(0,50)||'',
+          ActionAgregee: String(r[20]||'').substring(0,255),
+          ArgumentsCommentaires: String(r[21]||''),
+          PiecesJustificatives: String(r[22]||'').substring(0,255),
+          ActionsDelais: String(r[23]||''),
+          StatutTraitement: 'Nouveau',
+          FichierSource: file.name
+        })));
+        done += batch.length;
+        fill.style.width = (15 + Math.round(done/total*80)) + '%';
+        txt.textContent = `Import en cours... ${done}/${total}`;
+      }
+
+      fill.style.width = '100%';
+      txt.textContent = `✅ ${done} constats importés depuis "${file.name}" !`;
+      showToast(`${done} constats importés`, 'ok');
+      await loadConstats();
+      renderAll();
+      setTimeout(() => { bar.classList.remove('on'); fill.style.width='0%'; }, 4000);
+    } catch(err) {
+      txt.textContent = '❌ Erreur: ' + err.message;
+      fill.style.width = '0%';
+      showToast('Erreur import: ' + err.message, 'err');
+    }
+  };
+  reader.readAsBinaryString(file);
+  input.value = '';
+}
+
+// ══════════════════════════════════
+//  UPDATE
+// ══════════════════════════════════
+async function updateConstat(id, patch) {
+  try {
+    await spPatch(`web/lists/getbytitle('${CFG.lists.constats}')/items(${id})`, { ...patch, ModifiePar: S.email });
+    const idx = S.constats.findIndex(c=>c.Id===id);
+    if (idx>=0) { S.constats[idx] = {...S.constats[idx], ...patch}; if(S.selConstat?.Id===id) S.selConstat={...S.selConstat,...patch}; }
+    return true;
+  } catch(err) { showToast('Erreur sauvegarde: '+err.message, 'err'); return false; }
+}
+
+// ══════════════════════════════════
+//  FILTERS + SORT
+// ══════════════════════════════════
+const critOrd = {'Élevé':0,'Moyen':1,'Bas':2,'Non défini':3};
+function applyPeriode() {
+  const v = document.getElementById('f-periode')?.value || '';
+  const customEl = document.getElementById('f-custom-dates');
+  if (customEl) customEl.style.display = v === 'custom' ? 'flex' : 'none';
+  if (v !== 'custom') {
+    const now = new Date();
+    let from = null, to = new Date();
+    if (v === '7j')    { from = new Date(); from.setDate(now.getDate()-7); }
+    if (v === '30j')   { from = new Date(); from.setDate(now.getDate()-30); }
+    if (v === 'mois')  { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+    if (v === 'trim')  { const q=Math.floor(now.getMonth()/3); from=new Date(now.getFullYear(),q*3,1); }
+    if (v === 'annee') { from = new Date(now.getFullYear(), 0, 1); }
+    const fd = document.getElementById('f-date-from');
+    const td = document.getElementById('f-date-to');
+    if (fd) fd.value = from ? from.toISOString().split('T')[0] : '';
+    if (td) td.value = to ? to.toISOString().split('T')[0] : '';
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  const q       = (document.getElementById('f-q')?.value||'').toLowerCase();
+  const region  = document.getElementById('f-region')?.value||'';
+  const rga     = document.getElementById('f-rga')?.value||'';
+  const famille = document.getElementById('f-famille')?.value||'';
+  const crit    = document.getElementById('f-crit')?.value||'';
+  const statut  = document.getElementById('f-statut')?.value||'';
+  const dateFrom= document.getElementById('f-date-from')?.value||'';
+  const dateTo  = document.getElementById('f-date-to')?.value||'';
+  const dfrom   = dateFrom ? new Date(dateFrom) : null;
+  const dto     = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
+
+  let nbConstat=0, nbChargement=0;
+
+  S.filtered = S.constats.filter(c => {
+    if (region  && c.Region!==region)            return false;
+    if (rga     && c.CodeRGA!==rga)              return false;
+    if (famille && c.FamilleConstat!==famille)   return false;
+    if (crit    && c.Criticite!==crit)           return false;
+    if (statut  && c.StatutTraitement!==statut)  return false;
+    // Filtre temporel sur DateEffective
+    if (dfrom || dto) {
+      const d = c.DateEffectiveObj;
+      if (!d) return false;
+      if (dfrom && d < dfrom) return false;
+      if (dto   && d > dto)   return false;
+    }
+    if (q) {
+      const match = (c.Agence||'').toLowerCase().includes(q)||
+                    (c.LibelleConstat||'').toLowerCase().includes(q)||
+                    (c.FamilleConstat||'').toLowerCase().includes(q)||
+                    (c.Title||'').toLowerCase().includes(q)||
+                    (c.NomPrenom||'').toLowerCase().includes(q)||
+                    (c.CodeRGA||'').toLowerCase().includes(q)||
+                    (c.DateEffective||'').includes(q);
+      if (!match) return false;
+    }
+    if (c.DateSource === 'constat') nbConstat++; else nbChargement++;
+    return true;
+  });
+
+  // Badge source date
+  const sb = document.getElementById('f-source-badge');
+  if (sb && (dfrom||dto)) {
+    sb.style.display='inline';
+    sb.textContent=`📅 ${nbConstat} date constat · 📥 ${nbChargement} date chargement`;
+  } else if (sb) { sb.style.display='none'; }
+
+  doSort();
+  renderTable();
+  const cnt = document.getElementById('f-count');
+  if(cnt) cnt.textContent = `${S.filtered.length} / ${S.constats.length} constats`;
+  const badge = document.getElementById('cnt-badge');
+  if(badge){ badge.textContent=S.filtered.length; badge.style.display=S.filtered.length>0?'inline-flex':'none'; }
+}
+
+function doSort() {
+  const col=S.sortCol, dir=S.sortDir;
+  S.filtered.sort((a,b) => {
+    let va=a[col]||'', vb=b[col]||'';
+    if(col==='Criticite'){ va=critOrd[va]??9; vb=critOrd[vb]??9; return dir==='asc'?va-vb:vb-va; }
+    const r=String(va).localeCompare(String(vb),'fr');
+    return dir==='asc'?r:-r;
+  });
+}
+
+function sortBy(col) {
+  if(S.sortCol===col) S.sortDir=S.sortDir==='asc'?'desc':'asc'; else{S.sortCol=col;S.sortDir='asc';}
+  document.querySelectorAll('[id^="s-"]').forEach(el=>el.textContent='');
+  const el=document.getElementById('s-'+col); if(el) el.textContent=S.sortDir==='asc'?'↑':'↓';
+  doSort(); renderTable();
+}
+
+function resetFilters() {
+  ['f-q','f-region','f-rga','f-famille','f-crit','f-statut','f-date-from','f-date-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const fp=document.getElementById('f-periode'); if(fp) fp.value='';
+  const cd=document.getElementById('f-custom-dates'); if(cd) cd.style.display='none';
+  applyFilters();
+}
+
+function updateFilterOptions() {
+  const setOpts = (id, vals) => {
+    const el=document.getElementById(id); if(!el) return;
+    const cur=el.value;
+    el.innerHTML=el.options[0].outerHTML+vals.map(v=>`<option${cur===v?' selected':''}>${v}</option>`).join('');
+    el.value=cur;
+  };
+  setOpts('f-region',[...new Set(S.constats.map(c=>c.Region).filter(Boolean))].sort());
+  setOpts('f-rga',[...new Set(S.constats.map(c=>c.CodeRGA).filter(Boolean))].sort());
+  setOpts('f-famille',[...new Set(S.constats.map(c=>c.FamilleConstat).filter(Boolean))].sort());
+}
+
+// ══════════════════════════════════
+//  RENDER TABLE
+// ══════════════════════════════════
+const CB = (c,lbl='') => {
+  const m={'Élevé':'eleve','Moyen':'moyen','Bas':'bas','Non défini':'nouveau'};
+  return `<span class="badge b-${m[c]||'nouveau'}">${lbl||c}</span>`;
+};
+const SB = s => {const m={'Nouveau':'nouveau','En cours':'encours','Clôturé':'cloture','Contesté':'conteste'};return`<span class="badge b-${m[s]||'nouveau'}">${s}</span>`;};
+const SC = s => ({'Nouveau':'background:#F3F4F6;color:#374151','En cours':'background:#DBEAFE;color:#1D4ED8','Clôturé':'background:#D1FAE5;color:#065F46','Contesté':'background:#FEE2E2;color:#991B1B'}[s]||'');
+
+function renderTable() {
+  const body = document.getElementById('tbl-body'); if(!body) return;
+  if(!S.filtered.length){ body.innerHTML='<tr><td colspan="10" class="no-data">Aucun constat ne correspond aux filtres.</td></tr>'; return; }
+  body.innerHTML = S.filtered.map(c => {
+    const sel = S.selConstat?.Id===c.Id ? 'selected' : '';
+    const txt = (c.LibelleConstat||'').substring(0,80);
+    return `<tr class="${sel}" onclick="openSidebar(${c.Id})">
+      <td style="white-space:nowrap">${c.DateEffective||'—'}<br><span style='font-size:9px;color:var(--sub)'>${c.DateSource==='chargement'?'📥 chargement':''}</span></td>
+      <td style="font-weight:500;color:var(--G);white-space:nowrap">${c.Title||'—'}</td>
+      <td style="white-space:nowrap">${c.Region||'—'}</td>
+      <td class="td-clip" style="max-width:100px">${c.CodeRGA||'—'}</td>
+      <td class="td-clip">${c.Agence||'—'}</td>
+      <td class="td-clip">${c.FamilleConstat||'—'}</td>
+      <td class="td-clip" style="max-width:180px">${txt}${txt.length===80?'...':''}</td>
+      <td>${CB(c.Criticite)}</td>
+      <td><select class="statut-sel" style="${SC(c.StatutTraitement)}" onclick="event.stopPropagation()" onchange="quickStatut(${c.Id},this.value)">${['Nouveau','En cours','Clôturé','Contesté'].map(s=>`<option${c.StatutTraitement===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openSidebar(${c.Id})">👁 Détail</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function quickStatut(id, statut) {
+  const ok = await updateConstat(id, { StatutTraitement: statut });
+  if(ok){ showToast('Statut: '+statut,'ok'); renderDashboard(); }
+}
+
+// ══════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════
+const cnt = fn => S.constats.filter(fn).length;
+const grp = (field, lim=999, data=null) => {
+  const src = data || getDashConstats();
+  const acc={};
+  src.forEach(c=>{const k=c[field]||'N/A';acc[k]=(acc[k]||0)+1;});
+  return Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,lim);
+};
+
+// ══════════════════════════════════════
+//  DASHBOARD PÉRIODE
+// ══════════════════════════════════════
+function setDashPeriod(p) {
+  S.dashPeriod = p;
+  // Mettre à jour boutons actifs
+  document.querySelectorAll('.dp-btn').forEach(b => b.classList.remove('active-dp'));
+  document.getElementById('dp-'+p)?.classList.add('active-dp');
+  const customEl = document.getElementById('dp-custom-dates');
+  if (customEl) customEl.style.display = p === 'custom' ? 'flex' : 'none';
+
+  if (p !== 'custom' && p !== 'all') {
+    const now = new Date();
+    let from = null;
+    if (p === '7j')    { from = new Date(); from.setDate(now.getDate()-7); }
+    if (p === '30j')   { from = new Date(); from.setDate(now.getDate()-30); }
+    if (p === 'mois')  { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+    if (p === 'trim')  { const q=Math.floor(now.getMonth()/3); from=new Date(now.getFullYear(),q*3,1); }
+    if (p === 'annee') { from = new Date(now.getFullYear(), 0, 1); }
+    const fd = document.getElementById('dp-date-from');
+    const td = document.getElementById('dp-date-to');
+    if (fd) fd.value = from ? from.toISOString().split('T')[0] : '';
+    if (td) td.value = now.toISOString().split('T')[0];
+  } else if (p === 'all') {
+    const fd=document.getElementById('dp-date-from'); if(fd) fd.value='';
+    const td=document.getElementById('dp-date-to');   if(td) td.value='';
+  }
+  renderDashboard();
+}
+
+function getDashConstats() {
+  const dateFrom = document.getElementById('dp-date-from')?.value || '';
+  const dateTo   = document.getElementById('dp-date-to')?.value   || '';
+  if (!dateFrom && !dateTo) return S.constats;
+  const dfrom = dateFrom ? new Date(dateFrom) : null;
+  const dto   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
+  return S.constats.filter(c => {
+    const d = c.DateEffectiveObj;
+    if (!d) return !dfrom; // si pas de date, inclure seulement si pas de filtre from
+    if (dfrom && d < dfrom) return false;
+    if (dto   && d > dto)   return false;
+    return true;
+  });
+}
+
+function renderDashboard() {
+  const dc = getDashConstats(); // constats filtrés par période
+  const total = dc.length;
+  const cnt = f => dc.filter(f).length;
+
+  const clo = cnt(c=>c.StatutTraitement==='Clôturé');
+  const enc = cnt(c=>c.StatutTraitement==='En cours');
+  const nw  = cnt(c=>c.StatutTraitement==='Nouveau');
+  const con = cnt(c=>c.StatutTraitement==='Contesté');
+  const elv = cnt(c=>c.Criticite==='Élevé');
+  const taux= total ? Math.round(clo/total*100) : 0;
+  const tColor = taux>50?'#10B981':taux>25?'#F59E0B':'#DC2626';
+
+  // Label période
+  const dateFrom = document.getElementById('dp-date-from')?.value || '';
+  const dateTo   = document.getElementById('dp-date-to')?.value   || '';
+  const dpLbl = document.getElementById('dp-label');
+  if (dpLbl) {
+    if (!dateFrom && !dateTo) dpLbl.textContent = `${total} constats — toutes dates`;
+    else dpLbl.textContent = `${total} constats · ${dateFrom||'…'} → ${dateTo||'…'}`;
+  }
+
+  document.getElementById('pct-val').textContent=taux+'%';
+  const pf=document.getElementById('pct-fill'); pf.style.width=taux+'%'; pf.style.background=tColor;
+  document.getElementById('ps-clo').textContent=clo;
+  document.getElementById('ps-enc').textContent=enc;
+  document.getElementById('ps-new').textContent=nw;
+  document.getElementById('ps-con').textContent=con;
+
+  const kpis=[
+    {lbl:'Total constats',val:total,color:'var(--G)',ico:'📋'},
+    {lbl:'Criticité élevée',val:elv,sub:total?Math.round(elv/total*100)+'%':'',color:'#DC2626',ico:'⚠️'},
+    {lbl:'Nouveaux',val:nw,color:'#9CA3AF',ico:'🔵'},
+    {lbl:'En cours',val:enc,color:'#3B82F6',ico:'🔄'},
+    {lbl:'Clôturés',val:clo,color:'#10B981',ico:'✅'},
+    {lbl:'Contestés',val:con,color:'#EF4444',ico:'❌'},
+    {lbl:'Régions',val:[...new Set(dc.map(c=>c.Region).filter(Boolean))].length,color:'#7C3AED',ico:'🗺️'},
+    {lbl:'Agences',val:[...new Set(dc.map(c=>c.Agence).filter(Boolean))].length,color:'var(--O)',ico:'🏢'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="kpi-card">
+      <div class="kpi-label">${k.ico} ${k.lbl}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.val}</div>
+      ${k.sub?`<div class="kpi-sub">${k.sub}</div>`:''}
+    </div>`).join('');
+
+  renderCharts(dc);
+  document.getElementById('inf-total') && (document.getElementById('inf-total').textContent=`Total: ${S.constats.length} constats en base`);
+}
+
+// ══════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════
+function dch(id){if(S.charts[id]){S.charts[id].destroy();delete S.charts[id];}}
+const CHART_DEF={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},animation:{duration:400}};
+
+function renderCharts(dc){
+  dc = dc || getDashConstats();
+  const cntDc = fn => dc.filter(fn).length;
+
+  // Chart évolution temporelle
+  dch('evol');
+  const grpMode = document.getElementById('ch-evol-group')?.value || 'mois';
+  const evolAcc = {};
+  dc.forEach(c => {
+    const d = c.DateEffectiveObj;
+    if (!d) return;
+    let key;
+    if (grpMode === 'semaine') {
+      const y = d.getFullYear();
+      const start = new Date(y, 0, 1);
+      const wk = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+      key = `S${String(wk).padStart(2,'0')} ${y}`;
+    } else if (grpMode === 'trimestre') {
+      key = `T${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}`;
+    } else {
+      key = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    }
+    evolAcc[key] = (evolAcc[key]||0) + 1;
+  });
+  const evolKeys = Object.keys(evolAcc).sort();
+  const evolVals = evolKeys.map(k => evolAcc[k]);
+  if (document.getElementById('ch-evol') && evolKeys.length) {
+    S.charts['evol'] = new Chart(document.getElementById('ch-evol'), {
+      type: 'bar',
+      data: {
+        labels: evolKeys,
+        datasets: [{
+          label: 'Constats', data: evolVals,
+          backgroundColor: evolVals.map((_,i) => `rgba(0,107,42,${0.5 + 0.5*(i/evolVals.length)})`),
+          borderColor: 'rgba(0,107,42,0.8)', borderWidth: 1, borderRadius: 4
+        }, {
+          type: 'line', label: 'Tendance', data: evolVals,
+          borderColor: 'var(--O)', backgroundColor: 'transparent',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: 'var(--O)', tension: 0.4
+        }]
+      },
+      options: {
+        ...CHART_DEF,
+        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 10 }, padding: 8 } } },
+        scales: {
+          x: { ticks: { font: { size: 9 }, maxRotation: 30 } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // Criticite donut
+  dch('crit');
+  const cd=['Élevé','Moyen','Bas'],cv=cd.map(x=>cntDc(c=>c.Criticite===x)),ccol=['#DC2626','#F59E0B','#10B981'];
+  const cl=cd.filter((_,i)=>cv[i]>0),cvf=cv.filter(v=>v>0),ccf=ccol.filter((_,i)=>cv[i]>0);
+  if(document.getElementById('ch-crit')&&cl.length) S.charts['crit']=new Chart(document.getElementById('ch-crit'),{type:'doughnut',data:{labels:cl,datasets:[{data:cvf,backgroundColor:ccf,borderWidth:2,borderColor:'#fff'}]},options:{...CHART_DEF,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},padding:10}}}}});
+
+  // Statut bar
+  dch('stat');
+  const sl=['Nouveau','En cours','Clôturé','Contesté'],sv=sl.map(s=>cntDc(c=>c.StatutTraitement===s)),scol=['#9CA3AF','#3B82F6','#10B981','#EF4444'];
+  if(document.getElementById('ch-stat')) S.charts['stat']=new Chart(document.getElementById('ch-stat'),{type:'bar',data:{labels:sl,datasets:[{data:sv,backgroundColor:scol,borderRadius:4}]},options:{...CHART_DEF,indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+
+  // Famille
+  dch('fam');
+  const fd=grp('FamilleConstat',8,dc);
+  const fw=document.getElementById('ch-fam-wrap'); if(fw) fw.style.height=Math.max(fd.length*36+16,80)+'px';
+  if(document.getElementById('ch-fam')&&fd.length) S.charts['fam']=new Chart(document.getElementById('ch-fam'),{type:'bar',data:{labels:fd.map(d=>d[0]),datasets:[{data:fd.map(d=>d[1]),backgroundColor:'var(--G)',borderRadius:3}]},options:{...CHART_DEF,indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+
+  // Region
+  dch('reg');
+  const rd=grp('Region',999,dc);
+  if(document.getElementById('ch-reg')&&rd.length) S.charts['reg']=new Chart(document.getElementById('ch-reg'),{type:'bar',data:{labels:rd.map(d=>d[0]),datasets:[{data:rd.map(d=>d[1]),backgroundColor:'var(--O)',borderRadius:3}]},options:{...CHART_DEF,scales:{x:{ticks:{font:{size:9},maxRotation:30}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}}}}}});
+
+  // Agence
+  dch('agc');
+  const ad=grp('Agence',8,dc);
+  const aw=document.getElementById('ch-agc-wrap'); if(aw) aw.style.height=Math.max(ad.length*32+16,80)+'px';
+  if(document.getElementById('ch-agc')&&ad.length) S.charts['agc']=new Chart(document.getElementById('ch-agc'),{type:'bar',data:{labels:ad.map(d=>d[0]),datasets:[{data:ad.map(d=>d[1]),backgroundColor:'#7C3AED',borderRadius:3}]},options:{...CHART_DEF,indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+}
+
+// ══════════════════════════════════
+//  RGA ANALYSIS
+// ══════════════════════════════════
+function renderRGA(){
+  const rgas=[...new Set(S.constats.map(c=>c.CodeRGA).filter(Boolean))].sort();
+  document.getElementById('rga-tbody').innerHTML=rgas.map((rga,i)=>{
+    const rc=S.constats.filter(c=>c.CodeRGA===rga);
+    const region=rc[0]?.Region||'';
+    const taux=rc.length?Math.round(rc.filter(c=>c.StatutTraitement==='Clôturé').length/rc.length*100):0;
+    const tc=taux>50?'#10B981':taux>25?'#F59E0B':'#DC2626';
+    return `<tr style="background:${i%2===0?'#fff':'#F9FAFB'}">
+      <td style="font-weight:500;color:var(--G)">${rga}</td>
+      <td>${region}</td>
+      <td style="text-align:center;font-weight:600">${rc.length}</td>
+      <td style="text-align:center"><span style="background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:3px;font-size:11px">${rc.filter(c=>c.Criticite==='Élevé').length}</span></td>
+      <td style="text-align:center"><span style="background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:3px;font-size:11px">${rc.filter(c=>c.Criticite==='Moyen').length}</span></td>
+      <td style="text-align:center"><span style="background:#D1FAE5;color:#065F46;padding:1px 6px;border-radius:3px;font-size:11px">${rc.filter(c=>c.Criticite==='Bas').length}</span></td>
+      <td style="text-align:center;color:#9CA3AF">${rc.filter(c=>c.StatutTraitement==='Nouveau').length}</td>
+      <td style="text-align:center;color:#3B82F6">${rc.filter(c=>c.StatutTraitement==='En cours').length}</td>
+      <td style="text-align:center;color:#10B981">${rc.filter(c=>c.StatutTraitement==='Clôturé').length}</td>
+      <td style="text-align:center;color:#EF4444">${rc.filter(c=>c.StatutTraitement==='Contesté').length}</td>
+      <td><div class="rga-bar-wrap"><div class="rga-bar-track"><div class="rga-bar-fill" style="width:${taux}%;background:${tc}"></div></div><span style="font-size:10px;color:#6B7280;min-width:26px">${taux}%</span></div></td>
+    </tr>`;
+  }).join('');
+
+  dch('rga');
+  const rgaD=rgas.map(rga=>({n:rga.replace('RGA_','').replace('RGA ',''),v:S.constats.filter(c=>c.CodeRGA===rga).length})).sort((a,b)=>b.v-a.v).slice(0,10);
+  const rw=document.getElementById('ch-rga-wrap'); if(rw) rw.style.height=Math.max(rgaD.length*36+16,80)+'px';
+  if(document.getElementById('ch-rga')&&rgaD.length) S.charts['rga']=new Chart(document.getElementById('ch-rga'),{type:'bar',data:{labels:rgaD.map(d=>d.n),datasets:[{data:rgaD.map(d=>d.v),backgroundColor:'#1A5C2A',borderRadius:3}]},options:{...CHART_DEF,indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+}
+
+// ══════════════════════════════════
+//  RGA USERS ADMIN
+// ══════════════════════════════════
+function renderRGAUsers(){
+  const el=document.getElementById('rga-users-list'); if(!el) return;
+  if(!S.rgaUsers.length){ el.innerHTML='<div class="no-data">Aucun utilisateur configuré.</div>'; return; }
+  el.innerHTML=S.rgaUsers.map(u=>`
+    <div class="rga-user-row">
+      <div style="flex:1">
+        <div style="font-weight:500;font-size:12px">${u.NomAffichage||u.Title}</div>
+        <div style="font-size:11px;color:#6B7280">${u.EmailUtilisateur} · <strong>${u.Title}</strong> · ${u.Region||''}</div>
+      </div>
+      <button class="btn btn-sm" style="color:#DC2626;border:1px solid #DC2626;background:none" onclick="deleteUser(${u.Id},'${(u.NomAffichage||u.Title).replace(/'/g,"\\'")}')">🗑</button>
+    </div>`).join('');
+}
+function showAddUser(){ document.getElementById('add-user-form').style.display='block'; }
+async function saveNewUser(){
+  const code=document.getElementById('nu-code').value.trim();
+  const email=document.getElementById('nu-email').value.trim().toLowerCase();
+  const nom=document.getElementById('nu-nom').value.trim();
+  const region=document.getElementById('nu-region').value.trim();
+  if(!code||!email){ showToast('Code RGA et email obligatoires','err'); return; }
+  try {
+    await spPost(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`,{Title:code,EmailUtilisateur:email,NomAffichage:nom,Region:region});
+    showToast(`${nom||code} ajouté(e)`,'ok');
+    document.getElementById('add-user-form').style.display='none';
+    ['nu-code','nu-email','nu-nom','nu-region'].forEach(id=>document.getElementById(id).value='');
+    await loadRGAUsers(); renderRGAUsers();
+  } catch(err){ showToast('Erreur: '+err.message,'err'); }
+}
+async function deleteUser(id,nom){
+  if(!confirm(`Supprimer ${nom} ?`)) return;
+  await spDelete(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items(${id})`);
+  showToast(`${nom} supprimé(e)`,'ok');
+  await loadRGAUsers(); renderRGAUsers();
+}
+
+// ══════════════════════════════════
+//  DETAIL SIDEBAR
+// ══════════════════════════════════
+function openSidebar(id){
+  const c=S.constats.find(x=>x.Id===id); if(!c) return;
+  S.selConstat=c;
+  document.querySelectorAll('#tbl-body tr').forEach(tr=>tr.classList.remove('selected'));
+  event?.target?.closest('tr')?.classList.add('selected');
+
+  document.getElementById('sb-ref').textContent=c.Title||'Constat';
+  document.getElementById('sb-meta').textContent=`${c.Agence||''} · ${c.DateEffective||''}`;
+
+  const f=(lbl,val)=>`<div class="fld-row"><div class="fld-lbl">${lbl}</div><div class="fld-val">${val||'—'}</div></div>`;
+  const ft=(val)=>`<div class="fld-txt">${val||'—'}</div>`;
+  const ta=(id,field,val,ph='',rows=2)=>`<textarea id="sb-${id}" rows="${rows}" placeholder="${ph}" onchange="sbSave('${field}',this.value)">${val||''}</textarea>`;
+  const inp=(id,field,val,ph='')=>`<input type="text" id="sb-${id}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="${ph}" style="width:100%" onchange="sbSave('${field}',this.value)">`;
+  const sel=(id,field,val,opts)=>`<select id="sb-${id}" onchange="sbSave('${field}',this.value)" style="width:100%">${opts.map(o=>`<option${val===o?' selected':''}>${o}</option>`).join('')}</select>`;
+
+  document.getElementById('sb-body').innerHTML=`
+    <div class="sb-sec">
+      <div class="sb-sec-title">📋 Partie Contrôle (CGA)</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
+        ${CB(c.Criticite,'⚠ '+c.Criticite)}
+        ${c.FamilleConstat?`<span class="badge" style="background:#EDE9FE;color:#4C1D95">${c.FamilleConstat}</span>`:''}
+        ${c.Region?`<span class="badge" style="background:#EEF2FF;color:#3730A3">${c.Region} · ${c.CodeRGA||''}</span>`:''}
+      </div>
+      <div class="fld-row">
+        <div class="fld-lbl">Constat identifié</div>
+        <div style="font-weight:500;font-size:12px;margin-bottom:6px">${c.LibelleConstat||'—'}</div>
+        ${ft(c.DetailAnomalie)}
+      </div>
+      <div class="fld-grid" style="margin-top:10px">
+        ${f('Date',c.DateEffective+(c.DateSource==='chargement'?' (chargement)':''))}${f('Réf.',c.Title)}
+        ${f('Acteurs / Noms',c.NomPrenom||c.Acteurs)}${f('CIN / LD client',c.CINClient)}
+      </div>
+      ${f('Référence procédure',`<span style="font-size:11px">${c.RefProcedure||'—'}</span>`)}
+      <div class="fld-row"><div class="fld-lbl">Recommandation CGA</div>${ft(c.RecommandationCGA)}</div>
+      ${c.PieceJointeCGA?f('Pièce jointe CGA',c.PieceJointeCGA):''}
+      ${c.FichierSource?`<div style="font-size:10px;color:#9CA3AF;margin-top:5px">Source: ${c.FichierSource}</div>`:''}
+    </div>
+
+    <div class="sb-sec mgt">
+      <div class="sb-sec-title">⚙️ Zone Management / DR</div>
+      <div class="fld-row"><div class="fld-lbl">Statut de traitement</div>
+        ${sel('statut','StatutTraitement',c.StatutTraitement||'Nouveau',['Nouveau','En cours','Clôturé','Contesté'])}
+      </div>
+      <div class="fld-row"><div class="fld-lbl">Confirmation constat</div>
+        ${sel('conf','ConfirmationConstat',c.ConfirmationConstat||'',['','Confirmé','Infirmé','En attente'])}
+      </div>
+      <div class="fld-row"><div class="fld-lbl">Entités / Acteurs concernés</div>${inp('entites','EntitesConcernes',c.EntitesConcernes,'DR / RGA / Agence / CP...')}</div>
+      <div class="fld-row"><div class="fld-lbl">Actions / Mesures prises</div>${ta('actions','ActionsMesures',c.ActionsMesures,'Décrire les mesures correctives...',3)}</div>
+      <div class="fld-row"><div class="fld-lbl">Actions préconisées avec délais</div>${ta('adelais','ActionsDelais',c.ActionsDelais,'Ex: Régularisation sous 15 jours...')}</div>
+      <div class="fld-grid">
+        <div class="fld-row"><div class="fld-lbl">Action agrégée</div>${inp('actagg','ActionAgregee',c.ActionAgregee)}</div>
+        <div class="fld-row"><div class="fld-lbl">Pièces justificatives</div>${inp('piecesj','PiecesJustificatives',c.PiecesJustificatives)}</div>
+      </div>
+      <div class="fld-row"><div class="fld-lbl">Arguments / Commentaires</div>${ta('args','ArgumentsCommentaires',c.ArgumentsCommentaires)}</div>
+      <div class="fld-row"><div class="fld-lbl">Retours DR</div>${ta('retoursdr','RetoursDR',c.RetoursDR)}</div>
+      <div id="sb-save-ind" class="save-ind">✅ Sauvegardé dans SharePoint</div>
+      ${c.ModifiePar?`<div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px">Modifié par: ${c.ModifiePar}</div>`:''}
+    </div>`;
+
+  document.getElementById('sb-overlay').classList.add('open');
+  document.getElementById('sidebar').classList.add('open');
+}
+
+let sbTimer=null;
+async function sbSave(field, value){
+  clearTimeout(sbTimer);
+  sbTimer=setTimeout(async()=>{
+    const ok=await updateConstat(S.selConstat.Id,{[field]:value});
+    if(ok){
+      const ind=document.getElementById('sb-save-ind');
+      if(ind){ind.classList.add('on');setTimeout(()=>ind.classList.remove('on'),2500);}
+      renderDashboard(); renderTable();
+    }
+  },700);
+}
+
+function closeSidebar(){
+  document.getElementById('sb-overlay').classList.remove('open');
+  document.getElementById('sidebar').classList.remove('open');
+  document.querySelectorAll('#tbl-body tr').forEach(tr=>tr.classList.remove('selected'));
+  S.selConstat=null;
+}
+
+// ══════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════
+function exportExcel(){
+  const rows=S.filtered;
+  if(!rows.length){showToast('Aucune donnée','err');return;}
+  const h=['Date','Réf.','Région','RGA','Agence','Acteurs','Noms','Constat','Famille','Détail','CIN/LD','Réf. Procédure','Criticité','PJ CGA','Reco CGA','Statut Traitement','Actions/Mesures','Entités','Confirmation','Action Agrégée','Arguments','Retours DR','Pièces Justif.','Actions & Délais','Modifié Par'];
+  const d=rows.map(c=>[c.DateConstat,c.Title,c.Region,c.CodeRGA,c.Agence,c.Acteurs,c.NomPrenom,c.LibelleConstat,c.FamilleConstat,c.DetailAnomalie,c.CINClient,c.RefProcedure,c.Criticite,c.PieceJointeCGA,c.RecommandationCGA,c.StatutTraitement,c.ActionsMesures,c.EntitesConcernes,c.ConfirmationConstat,c.ActionAgregee,c.ArgumentsCommentaires,c.RetoursDR,c.PiecesJustificatives,c.ActionsDelais,c.ModifiePar]);
+  const ws=XLSX.utils.aoa_to_sheet([h,...d]);
+  ws['!cols']=[10,14,8,14,16,20,20,30,20,50,12,35,10,20,30,16,35,20,12,20,30,30,20,35,20].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Constats CGA');
+  XLSX.writeFile(wb,`Constats_CGA_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.xlsx`);
+  showToast(`${rows.length} constats exportés`,'ok');
+}
+
+// Export global structuré pour script Python notifications
+// Nom de fichier FIXE = CGA_Constats_Global.xlsx (détecté par watchdog)
+function exportGlobal(){
+  if(!S.constats.length){showToast('Aucune donnée à exporter','err');return;}
+
+  // Construire mapping CodeRGA → email depuis S.rgaUsers
+  const rgaEmailMap={};
+  S.rgaUsers.forEach(u=>{ if(u.Title&&u.EmailUtilisateur) rgaEmailMap[u.Title]=u.EmailUtilisateur; });
+
+  const h=[
+    'Date','Réf_Constat','Région','Code_RGA','Email_RGA','Agence',
+    'Acteurs','Noms','Constat','Famille','Détail','CIN_LD',
+    'Réf_Procédure','Criticité','Reco_CGA','Statut_Traitement',
+    'Actions_Mesures','Entités','Confirmation','Arguments',
+    'Retours_DR','Actions_Délais','Modifié_Par','Date_Export'
+  ];
+  const dateExport=new Date().toLocaleString('fr-FR');
+  const d=S.constats.map(c=>[
+    c.DateConstat,c.Title,c.Region,c.CodeRGA,
+    rgaEmailMap[c.CodeRGA]||'',
+    c.Agence,c.Acteurs,c.NomPrenom,c.LibelleConstat,
+    c.FamilleConstat,c.DetailAnomalie,c.CINClient,
+    c.RefProcedure,c.Criticite,c.RecommandationCGA,
+    c.StatutTraitement,c.ActionsMesures,c.EntitesConcernes,
+    c.ConfirmationConstat,c.ArgumentsCommentaires,
+    c.RetoursDR,c.ActionsDelais,c.ModifiePar,dateExport
+  ]);
+
+  const ws=XLSX.utils.aoa_to_sheet([h,...d]);
+  ws['!cols']=[10,16,10,16,28,16,16,20,35,20,50,14,35,10,35,16,35,20,14,35,35,35,20,18].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Constats');
+  // Nom FIXE pour détection Python
+  XLSX.writeFile(wb,'CGA_Constats_Global.xlsx');
+  showToast(`Export global : ${S.constats.length} constats — placez ce fichier dans le dossier surveillé`,'ok');
+}
+
+function exportSynthese(){
+  const regs=[...new Set(S.constats.map(c=>c.Region).filter(Boolean))].sort();
+  const rgas=[...new Set(S.constats.map(c=>c.CodeRGA).filter(Boolean))].sort();
+  const total=S.constats.length;
+  const taux=total?Math.round(cnt(c=>c.StatutTraitement==='Clôturé')/total*100):0;
+  const rows=[
+    ['SYNTHÈSE CONSTATS CGA — FONDATION ARRAWAJ'],[''],
+    ['Généré le',new Date().toLocaleString('fr-FR')],['Total constats',total],['Taux de clôture',taux+'%'],[''],
+    ['PAR CRITICITÉ'],['Élevé',cnt(c=>c.Criticite==='Élevé')],['Moyen',cnt(c=>c.Criticite==='Moyen')],['Bas',cnt(c=>c.Criticite==='Bas')],[''],
+    ['PAR STATUT'],['Nouveau',cnt(c=>c.StatutTraitement==='Nouveau')],['En cours',cnt(c=>c.StatutTraitement==='En cours')],['Clôturé',cnt(c=>c.StatutTraitement==='Clôturé')],['Contesté',cnt(c=>c.StatutTraitement==='Contesté')],[''],
+    ['PAR RÉGION','Total','Élevés','En cours','Clôturés','Taux clôture'],
+    ...regs.map(r=>{const rc=S.constats.filter(c=>c.Region===r);const t=rc.length?Math.round(rc.filter(c=>c.StatutTraitement==='Clôturé').length/rc.length*100):0;return[r,rc.length,rc.filter(c=>c.Criticite==='Élevé').length,rc.filter(c=>c.StatutTraitement==='En cours').length,rc.filter(c=>c.StatutTraitement==='Clôturé').length,t+'%'];}),[''],
+    ['PAR RGA','Total','Élevés','En cours','Clôturés','Taux clôture'],
+    ...rgas.map(rga=>{const rc=S.constats.filter(c=>c.CodeRGA===rga);const t=rc.length?Math.round(rc.filter(c=>c.StatutTraitement==='Clôturé').length/rc.length*100):0;return[rga,rc.length,rc.filter(c=>c.Criticite==='Élevé').length,rc.filter(c=>c.StatutTraitement==='En cours').length,rc.filter(c=>c.StatutTraitement==='Clôturé').length,t+'%'];}),[''],
+    ['TOP FAMILLES'],
+    ...grp('FamilleConstat',10)
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:40},{wch:10},{wch:10},{wch:10},{wch:12},{wch:14}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Synthèse');
+  XLSX.writeFile(wb,`Synthese_CGA_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.xlsx`);
+  showToast('Synthèse exportée','ok');
+}
+
+function exportRGA(){
+  const rgas=[...new Set(S.constats.map(c=>c.CodeRGA).filter(Boolean))].sort();
+  const h=['RGA','Région','Total','Élevé','Moyen','Bas','Nouveau','En cours','Clôturé','Contesté','Taux Clôture'];
+  const d=rgas.map(rga=>{const rc=S.constats.filter(c=>c.CodeRGA===rga);const t=rc.length?Math.round(rc.filter(c=>c.StatutTraitement==='Clôturé').length/rc.length*100):0;return[rga,rc[0]?.Region||'',rc.length,rc.filter(c=>c.Criticite==='Élevé').length,rc.filter(c=>c.Criticite==='Moyen').length,rc.filter(c=>c.Criticite==='Bas').length,rc.filter(c=>c.StatutTraitement==='Nouveau').length,rc.filter(c=>c.StatutTraitement==='En cours').length,rc.filter(c=>c.StatutTraitement==='Clôturé').length,rc.filter(c=>c.StatutTraitement==='Contesté').length,t+'%'];});
+  const ws=XLSX.utils.aoa_to_sheet([h,...d]);
+  ws['!cols']=[20,10,8,8,8,6,10,10,10,10,12].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Analyse RGA');
+  XLSX.writeFile(wb,`RGA_CGA_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.xlsx`);
+}
+
+// ══════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════
+function switchTab(tab){
+  S.tab=tab;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  ['dashboard','constats','rga','admin'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.style.display=t===tab?'':'none';});
+  if(tab==='rga'&&S.role==='admin') renderRGA();
+  closeSidebar();
+}
+
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast on '+type;
+  setTimeout(()=>el.className='toast',3500);
+}
+
+function setLdMsg(msg){document.getElementById('ld-msg').textContent=msg;}
+
+function renderAll(){
+  updateFilterOptions();
+  applyFilters();
+  renderDashboard();
+  if(S.role==='admin'){ renderRGAUsers(); if(S.tab==='rga') renderRGA(); }
+}
+
+async function refreshData(){
+  showToast('Actualisation...','');
+  await loadConstats();
+  await loadRGAUsers();
+  renderAll();
+  showToast('Données actualisées','ok');
+}
+
+async function clearData(){
+  if(!confirm('⚠️ Supprimer TOUS les constats ? Action irréversible.')) return;
+  for(const c of S.constats) await spDelete(`web/lists/getbytitle('${CFG.lists.constats}')/items(${c.Id})`);
+  S.constats=[]; S.filtered=[];
+  renderAll();
+  showToast('Toutes les données supprimées','ok');
+}
+
+// Auto-refresh every 5 minutes
+setInterval(async()=>{
+  try{await loadConstats();renderAll();}catch{}
+},5*60000);
+// ══════════════════════════════════════════════════════════
+//  INIT PRINCIPAL
+// ══════════════════════════════════════════════════════════
+async function init() {
+  // Ne pas effacer le session storage si on revient d'un redirect Microsoft
+  const isReturningFromRedirect = window.location.hash.includes('code=') || 
+                                   window.location.search.includes('code=');
+  if (!isReturningFromRedirect) {
+    Object.keys(sessionStorage).filter(k=>k.startsWith('msal.')&&k.includes('interaction')).forEach(k=>sessionStorage.removeItem(k));
+  }
+  setLdMsg('Initialisation...');
+
+  let redirectResult = null;
+  try {
+    redirectResult = await Promise.race([
+      msalInstance.handleRedirectPromise(),
+      new Promise(r => setTimeout(()=>r(null), 2000))
+    ]);
+  } catch(e) { console.warn('MSAL:', e.message); }
+
+  if (redirectResult?.account) { await loadApp(); return; }
+
+  console.log('Showing login screen...');
+  const ld = document.getElementById('loading-screen');
+  const ln = document.getElementById('login-screen');
+  console.log('Elements found - loading:', !!ld, 'login:', !!ln);
+  if (ld) ld.style.cssText = 'display:none!important';
+  if (ln) ln.style.cssText = 'display:flex!important;position:fixed;inset:0;background:#1A5C2A;align-items:center;justify-content:center;flex-direction:column;z-index:9999';
+  else document.body.innerHTML += '<div style="position:fixed;inset:0;background:#1A5C2A;display:flex;align-items:center;justify-content:center;z-index:9999"><div style="text-align:center;color:#fff"><div style="font-size:24px;margin-bottom:20px">🛡️ Suivi Constats CGA</div><button onclick="loginMicrosoft()" style="background:#E8840F;color:#fff;border:none;padding:14px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Se connecter avec Microsoft</button></div></div>';
+}
+
+async function getTokenSilent(account) {
+  try {
+    const res = await Promise.race([
+      msalInstance.acquireTokenSilent({ scopes: [SP_SCOPE], account }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
+    ]);
+    return res.accessToken;
+  } catch { return null; }
+}
+
+async function loadApp() {
+  const ldScreen = document.getElementById('loading-screen');
+  document.getElementById('login-screen').style.display = 'none';
+  ldScreen.style.display = 'flex';
+  try {
+    // Détecter d'abord si admin (depuis MSAL, sans appel SP)
+    const accounts = msalInstance.getAllAccounts();
+    const emailCheck = (accounts[0]?.username || '').toLowerCase();
+    const isAdminCheck = emailCheck === CFG.adminEmail.toLowerCase() ||
+                         emailCheck.includes(CFG.adminEmail.split('@')[0].toLowerCase());
+
+    if (isAdminCheck) {
+      // Pour l'admin : vérifier si les colonnes existent (setup)
+      setLdMsg('Vérification des listes...');
+      const [c1, c2] = await Promise.all([listExists(CFG.lists.constats), listExists(CFG.lists.rgaUsers)]);
+      if (!c1 || !c2) {
+        ldScreen.style.display='none';
+        document.getElementById('setup-screen').style.display='block';
+        return;
+      }
+    }
+    // Pour les RGA : on saute la vérification → detectRole directement
+
+    setLdMsg('Détection du rôle...');
+    await detectRole();
+
+    if (S.role === 'none') {
+      ldScreen.style.display = 'none';
+      document.body.insertAdjacentHTML('beforeend', `
+        <div style="min-height:100vh;background:#F3F4F6;display:flex;align-items:center;justify-content:center">
+          <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:32px;text-align:center;max-width:420px">
+            <div style="font-size:40px;margin-bottom:12px">🔒</div>
+            <h2 style="color:#991B1B;margin-bottom:8px">Accès non autorisé</h2>
+            <p style="font-size:12px;color:#6B7280">Compte : <strong>${S.email}</strong></p>
+            <p style="font-size:12px;color:#6B7280">Contact : hicham.nekhla@fondation-arrawaj.ma</p>
+            <button onclick="msalInstance.logoutRedirect()" style="margin-top:16px;padding:8px 16px;border:1px solid #E5E7EB;border-radius:6px;cursor:pointer">Déconnexion</button>
+          </div></div>`);
+      return;
+    }
+
+    setLdMsg('Chargement des données...');
+    await Promise.all([loadConstats(), loadRGAUsers()]);
+
+    const isAdmin = S.role === 'admin';
+    document.getElementById('user-badge').innerHTML = (isAdmin?'👑':'👤')+' '+(S.user.Title||S.email);
+    document.getElementById('user-badge').className = 'user-badge'+(isAdmin?' admin':'');
+    document.getElementById('hd-sub').textContent = isAdmin
+      ? 'Fondation Arrawaj · Administrateur CGA'
+      : `Fondation Arrawaj · ${S.userRGA?.NomAffichage||S.userRGA?.Title||'RGA'} ${S.userRGA?.Region?'— '+S.userRGA.Region:''}`;
+
+    if (isAdmin) {
+      document.getElementById('btn-import').style.display='flex';
+      document.getElementById('btn-synthese').style.display='flex';
+      document.getElementById('btn-global').style.display='flex';
+      document.querySelectorAll('.admin-tab').forEach(el=>el.style.display='');
+    } else {
+      const rga = S.userRGA;
+      document.getElementById('main-app').insertAdjacentHTML('afterbegin',
+        `<div style="background:#E8F4ED;border-bottom:1px solid #A7C4B0;padding:7px 20px;font-size:12px;color:#1A5C2A">
+          🏢 Constats de <strong>${rga?.Title||'votre RGA'}</strong> ${rga?.Region?'— '+rga.Region:''}
+        </div>`);
+      document.getElementById('f-rga')&&(document.getElementById('f-rga').style.display='none');
+    }
+    renderAll();
+    ldScreen.style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+  } catch(err) {
+    setLdMsg('❌ '+err.message);
+    console.error('loadApp:', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
