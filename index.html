@@ -1013,7 +1013,7 @@ async function loadConstats(periodeJours = null) {
   let filters = [];
 
   if (S.role === 'rga' && S.userRGA) {
-    filters.push(`cr2c5_rga eq '${S.userRGA.Title}'`);
+    filters.push(`cr2c5_coderga eq '${S.userRGA.Title}'`);
   }
   if (S.role === 'dr' && S.userDR) {
     const drRegion = (S.userDR.Region && S.userDR.Region.toLowerCase() !== 'tout' && S.userDR.Region.trim() !== '')
@@ -1049,7 +1049,7 @@ async function loadConstats(periodeJours = null) {
 
   // Mapping champs Dataverse → structure app existante
   S.constats = items.map(c => {
-    const dateConstat  = c.cr2c5_datedeconstat ? new Date(c.cr2c5_datedeconstat).toLocaleDateString('fr-FR') : '';
+    const dateConstat  = c.cr2c5_dateduconstat ? new Date(c.cr2c5_dateduconstat).toLocaleDateString('fr-FR') : '';
     const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
     // Mapping valeurs numériques Dataverse → labels affichage
@@ -1061,24 +1061,24 @@ async function loadConstats(periodeJours = null) {
                          c['cr2c5_statut@OData.Community.Display.V1.FormattedValue'] || 'Nouveau';
     return {
       Id:                    c.cr2c5_cgaconstatsid,
-      Title:                 c.cr2c5_refconstat || '',
+      Title:                 c.cr2c5_referenceduconstat || '',
       DateConstat:           dateConstat,
       Region:                c.cr2c5_region || '',
-      CodeRGA:               c.cr2c5_rga || '',
+      CodeRGA:               c.cr2c5_coderga || '',
       Agence:                c.cr2c5_agence || '',
-      Acteurs:               c.cr2c5_acteurs || '',
-      NomPrenom:             c.cr2c5_nomprenom || '',
-      LibelleConstat:        c.cr2c5_constat || '',
-      FamilleConstat:        c.cr2c5_familleconstat || '',
-      DetailAnomalie:        c.cr2c5_detailanomalie || '',
-      CINClient:             c.cr2c5_ldoucinclient || '',
-      RefProcedure:          c.cr2c5_referenceprocedure || '',
+      Acteurs:               c.cr2c5_acteursimpliques || '',
+      NomPrenom:             c.cr2c5_nometprenom || '',
+      LibelleConstat:        c.cr2c5_descriptionduconstat || '',
+      FamilleConstat:        c.cr2c5_familleduconstat || '',
+      DetailAnomalie:        c.cr2c5_detaildelanomalie || '',
+      CINClient:             c.cr2c5_identifiantclient || '',
+      RefProcedure:          c.cr2c5_referencedelaprocedure || '',
       Criticite:             criticiteVal,
       PieceJointeCGA:        c.cr2c5_piecejointe || '',
       RecommandationCGA:     c.cr2c5_recommandationcga || '',
       StatutTraitement:      statutVal,
       ActionsMesures:        c.cr2c5_actionsmesures || '',
-      EntitesConcernes:      c.cr2c5_acteursentitesconcernes || '',
+      EntitesConcernes:      c.cr2c5_acteursimpliquesentitesconcernes || '',
       ConfirmationConstat:   c.cr2c5_confirmationconstat || '',
       ActionAgregee:         c.cr2c5_actionagregee || '',
       ArgumentsCommentaires: c.cr2c5_argumentcommentaires || '',
@@ -1205,18 +1205,18 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         for (let i=0;i<dataRows.length;i+=bsz) {
           const batch = dataRows.slice(i, i+bsz);
           await Promise.all(batch.map(r => dvPost(DV_TABLES.constats, {
-            cr2c5_refconstat:          String(r[1]||'').substring(0,100),
-            cr2c5_datedeconstat:       xlDate(r[0]) || null,
+            cr2c5_referenceduconstat:          String(r[1]||'').substring(0,100),
+            cr2c5_dateduconstat:       xlDate(r[0]) || null,
             cr2c5_region:              String(r[2]||'').substring(0,100),
-            cr2c5_rga:                 String(r[3]||'').substring(0,100),
+            cr2c5_coderga:                 String(r[3]||'').substring(0,100),
             cr2c5_agence:              String(r[4]||'').substring(0,200),
-            cr2c5_acteurs:             String(r[5]||'').substring(0,200),
-            cr2c5_nomprenom:           String(r[6]||'').substring(0,200),
-            cr2c5_constat:             String(r[7]||'').substring(0,5000),
-            cr2c5_familleconstat:      String(r[8]||'').substring(0,200),
-            cr2c5_detailanomalie:      String(r[9]||'').substring(0,5000),
-            cr2c5_ldoucinclient:       String(r[10]||'').substring(0,100),
-            cr2c5_referenceprocedure:  String(r[11]||'').substring(0,200),
+            cr2c5_acteursimpliques:             String(r[5]||'').substring(0,200),
+            cr2c5_nometprenom:           String(r[6]||'').substring(0,200),
+            cr2c5_descriptionduconstat:             String(r[7]||'').substring(0,5000),
+            cr2c5_familleduconstat:      String(r[8]||'').substring(0,200),
+            cr2c5_detaildelanomalie:      String(r[9]||'').substring(0,5000),
+            cr2c5_identifiantclient:       String(r[10]||'').substring(0,100),
+            cr2c5_referencedelaprocedure:  String(r[11]||'').substring(0,200),
             cr2c5_criticite:           normCritDV(r[12]),
             cr2c5_piecejointe:         String(r[13]||'').substring(0,500),
             cr2c5_recommandationcga:   String(r[14]||'').substring(0,5000),
@@ -1252,7 +1252,7 @@ async function updateConstat(id, patch) {
       dvPatchData.cr2c5_confirmationconstat = confMap[patch.ConfirmationConstat] ?? null;
     }
     if (patch.ActionsMesures     !== undefined) dvPatchData.cr2c5_actionsmesures         = patch.ActionsMesures;
-    if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursentitesconcernes = patch.EntitesConcernes;
+    if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursimpliquesentitesconcernes = patch.EntitesConcernes;
     if (patch.ActionsDelais      !== undefined) dvPatchData.cr2c5_actionsdelais           = patch.ActionsDelais;
     if (patch.ActionAgregee      !== undefined) dvPatchData.cr2c5_actionagregee           = patch.ActionAgregee;
     if (patch.PiecesJustificatives!== undefined) dvPatchData.cr2c5_piecesjustificatives   = patch.PiecesJustificatives;
