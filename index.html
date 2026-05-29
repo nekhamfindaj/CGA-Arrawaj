@@ -1060,7 +1060,7 @@ async function loadConstats(periodeJours = null) {
     const statutVal    = statutMap[c.cr2c5_statut] ||
                          c['cr2c5_statut@OData.Community.Display.V1.FormattedValue'] || 'Nouveau';
     return {
-      Id:                    c.cr2c5_cgaconstatsid,
+      Id:                    c.cr2c5_constatid,
       Title:                 c.cr2c5_referenceduconstat || '',
       DateConstat:           dateConstat,
       Region:                c.cr2c5_region || '',
@@ -1083,7 +1083,7 @@ async function loadConstats(periodeJours = null) {
       ActionAgregee:         c.cr2c5_actionagregee || '',
       ArgumentsCommentaires: c.cr2c5_argumentsoucommentaires || '',
       PiecesJustificatives:  c.cr2c5_piecesjustificatives || '',
-      ActionsDelais:         c.cr2c5_actionspreconiseesvecdelais || '',
+      ActionsDelais:         c.cr2c5_actionspreconiseesavecdelais || '',
       ModifiePar:            c.cr2c5_modifiepar || '',
       FichierSource:         c.cr2c5_fichiersource || '',
       RetoursDR:             c.cr2c5_retoursdr || '',
