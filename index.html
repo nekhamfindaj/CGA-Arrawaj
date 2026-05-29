@@ -1998,49 +1998,106 @@ function openSidebar(id){
   const inp=(id,field,val,ph='')=>`<input type="text" id="sb-${id}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="${ph}" style="width:100%" onchange="sbSave('${field}',this.value)">`;
   const sel=(id,field,val,opts)=>`<select id="sb-${id}" onchange="sbSave('${field}',this.value)" style="width:100%">${opts.map(o=>`<option${val===o?' selected':''}>${o}</option>`).join('')}</select>`;
 
+  // Criticité couleurs
+  const critStyle = {'Élevé':'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA','Moyen':'background:#FEF3C7;color:#92400E;border:1px solid #FDE68A','Bas':'background:#D1FAE5;color:#065F46;border:1px solid #A7F3D0','Non défini':'background:#F3F4F6;color:#6B7280;border:1px solid #E5E7EB'};
+  const statStyle = {'Nouveau':'background:#F0FDF4;color:#166534;border:1px solid #BBF7D0','En cours':'background:#DBEAFE;color:#1D4ED8;border:1px solid #BFDBFE','Clôturé':'background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7','Contesté':'background:#FEE2E2;color:#991B1B;border:1px solid #FECACA'};
+  const pill=(txt,style)=>`<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;${style}">${txt}</span>`;
+  const row=(ico,lbl,val,muted=false)=>val?`<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #F3F4F6">
+    <span style="font-size:13px;flex-shrink:0;margin-top:1px">${ico}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">${lbl}</div>
+      <div style="font-size:12px;color:${muted?'#9CA3AF':'var(--text)'};line-height:1.5;word-break:break-word">${val}</div>
+    </div></div>`:'';
+  const blk=(ico,lbl,val)=>val?`<div style="padding:10px 12px;background:var(--GL);border-radius:8px;border-left:3px solid var(--G2);margin-bottom:8px">
+    <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">${ico} ${lbl}</div>
+    <div style="font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap">${val}</div></div>`:'';
+  const sec=(title,content)=>`<div style="margin-bottom:16px">
+    <div style="font-size:10px;font-weight:700;color:var(--G);text-transform:uppercase;letter-spacing:0.8px;padding:6px 0;border-bottom:2px solid var(--bd);margin-bottom:10px">${title}</div>
+    ${content}</div>`;
+  const editable=(id,field,val,ph='',multiline=false)=>multiline
+    ?`<div style="margin-bottom:8px"><textarea id="sb-${id}" rows="3" placeholder="${ph}" onchange="sbSave('${field}',this.value)" style="width:100%;font-size:12px;padding:8px 10px;border:1.5px solid var(--bd);border-radius:7px;resize:vertical;font-family:inherit;line-height:1.5">${val||''}</textarea></div>`
+    :`<div style="margin-bottom:8px"><input type="text" id="sb-${id}" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="${ph}" onchange="sbSave('${field}',this.value)" style="width:100%;font-size:12px;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-family:inherit"></div>`;
+
   document.getElementById('sb-body').innerHTML=`
-    <div class="sb-sec">
-      <div class="sb-sec-title">📋 Partie Contrôle (CGA)</div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
-        ${CB(c.Criticite,'⚠ '+c.Criticite)}
-        ${c.FamilleConstat?`<span class="badge" style="background:#EDE9FE;color:#4C1D95">${c.FamilleConstat}</span>`:''}
-        ${c.Region?`<span class="badge" style="background:#EEF2FF;color:#3730A3">${c.Region} · ${c.CodeRGA||''}</span>`:''}
+    <!-- ══ FICHIER SOURCE ══ -->
+    ${c.FichierSource||c.Title?`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:linear-gradient(90deg,#F0FDF4,#EFF6FF);border-radius:8px;margin-bottom:14px;border:1px solid var(--bd)">
+      <span style="font-size:16px">📂</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;font-weight:700">Fichier source</div>
+        <div style="font-size:11px;color:var(--G);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.FichierSource||c.Title+'.xlsx'}</div>
       </div>
-      <div class="fld-row">
-        <div class="fld-lbl">Constat identifié</div>
-        <div style="font-weight:500;font-size:12px;margin-bottom:6px">${c.LibelleConstat||'—'}</div>
-        ${ft(c.DetailAnomalie)}
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:9px;color:var(--sub)">Importé le</div>
+        <div style="font-size:11px;color:var(--G);font-weight:600">${c.DateEffective||'—'}</div>
       </div>
-      <div class="fld-grid" style="margin-top:10px">
-        ${f('Date',c.DateEffective+(c.DateSource==='chargement'?' (chargement)':''))}${f('Réf.',c.Title)}
-        ${f('Acteurs / Noms',c.NomPrenom||c.Acteurs)}${f('CIN / LD client',c.CINClient)}
-      </div>
-      ${f('Référence procédure',`<span style="font-size:11px">${c.RefProcedure||'—'}</span>`)}
-      <div class="fld-row"><div class="fld-lbl">Recommandation CGA</div>${ft(c.RecommandationCGA)}</div>
-      ${c.PieceJointeCGA?f('Pièce jointe CGA',c.PieceJointeCGA):''}
-      ${c.FichierSource?`<div style="font-size:10px;color:#9CA3AF;margin-top:5px">Source: ${c.FichierSource}</div>`:''}
+    </div>`:''}
+
+    <!-- ══ BADGES STATUT/CRITICITÉ ══ -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+      ${pill(c.Criticite||'Non défini', critStyle[c.Criticite]||critStyle['Non défini'])}
+      ${pill(c.StatutTraitement||'Nouveau', statStyle[c.StatutTraitement]||statStyle['Nouveau'])}
+      ${c.FamilleConstat?pill('📁 '+c.FamilleConstat,'background:#EDE9FE;color:#4C1D95;border:1px solid #DDD6FE'):''}
+      ${c.Region?pill('📍 '+c.Region+(c.CodeRGA?' · '+c.CodeRGA:''),'background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE'):''}
     </div>
 
-    <div class="sb-sec mgt">
-      <div class="sb-sec-title">⚙️ Zone Management / DR</div>
-      <div class="fld-row"><div class="fld-lbl">Statut de traitement</div>
-        ${sel('statut','StatutTraitement',c.StatutTraitement||'Nouveau',['Nouveau','En cours','Clôturé','Contesté'])}
+    <!-- ══ SECTION 1 : IDENTIFICATION ══ -->
+    ${sec('📋 Identification du constat',`
+      ${blk('📝','Constat identifié',c.LibelleConstat)}
+      ${blk('🔍','Détail de l\'anomalie',c.DetailAnomalie)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+        ${row('📅','Date',c.DateEffective+(c.DateSource==='chargement'?' <span style="font-size:9px;color:#9CA3AF">(chargement)</span>':''))}
+        ${row('🔖','Référence',c.Title)}
+        ${row('👥','Acteurs / Noms',c.NomPrenom||c.Acteurs)}
+        ${row('🪪','CIN / LD client',c.CINClient)}
       </div>
-      <div class="fld-row"><div class="fld-lbl">Confirmation constat</div>
-        ${sel('conf','ConfirmationConstat',c.ConfirmationConstat||'',['','Confirmé','Infirmé','En attente'])}
+      ${row('📜','Référence procédure',c.RefProcedure)}
+    `)}
+
+    <!-- ══ SECTION 2 : RECOMMANDATION ══ -->
+    ${c.RecommandationCGA||c.PieceJointeCGA?sec('💡 Recommandation CGA',`
+      ${blk('💡','Recommandation',c.RecommandationCGA)}
+      ${c.PieceJointeCGA?row('📎','Pièce jointe',c.PieceJointeCGA):''}
+    `):''}
+
+    <!-- ══ SECTION 3 : ZONE MANAGEMENT ══ -->
+    ${sec('⚙️ Traitement & Suivi',`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Statut</div>
+          <select id="sb-statut" onchange="sbSave('StatutTraitement',this.value)" style="width:100%;font-size:12px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:7px">
+            ${['Nouveau','En cours','Clôturé','Contesté'].map(o=>`<option${c.StatutTraitement===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Confirmation</div>
+          <select id="sb-conf" onchange="sbSave('ConfirmationConstat',this.value)" style="width:100%;font-size:12px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:7px">
+            ${['','Confirmé','Infirmé','En attente'].map(o=>`<option${c.ConfirmationConstat===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
       </div>
-      <div class="fld-row"><div class="fld-lbl">Entités / Acteurs concernés</div>${inp('entites','EntitesConcernes',c.EntitesConcernes,'DR / RGA / Agence / CP...')}</div>
-      <div class="fld-row"><div class="fld-lbl">Actions / Mesures prises</div>${ta('actions','ActionsMesures',c.ActionsMesures,'Décrire les mesures correctives...',3)}</div>
-      <div class="fld-row"><div class="fld-lbl">Actions préconisées avec délais</div>${ta('adelais','ActionsDelais',c.ActionsDelais,'Ex: Régularisation sous 15 jours...')}</div>
-      <div class="fld-grid">
-        <div class="fld-row"><div class="fld-lbl">Action agrégée</div>${inp('actagg','ActionAgregee',c.ActionAgregee)}</div>
-        <div class="fld-row"><div class="fld-lbl">Pièces justificatives</div>${inp('piecesj','PiecesJustificatives',c.PiecesJustificatives)}</div>
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Entités / Acteurs concernés</div>
+      ${editable('entites','EntitesConcernes',c.EntitesConcernes,'DR / RGA / Agence / CP...')}
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Actions / Mesures prises</div>
+      ${editable('actions','ActionsMesures',c.ActionsMesures,'Décrire les mesures correctives...',true)}
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Actions préconisées avec délais</div>
+      ${editable('adelais','ActionsDelais',c.ActionsDelais,'Ex: Régularisation sous 15 jours...',true)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Action agrégée</div>
+          ${editable('actagg','ActionAgregee',c.ActionAgregee,'—')}
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Pièces justificatives</div>
+          ${editable('piecesj','PiecesJustificatives',c.PiecesJustificatives,'—')}
+        </div>
       </div>
-      <div class="fld-row"><div class="fld-lbl">Arguments / Commentaires</div>${ta('args','ArgumentsCommentaires',c.ArgumentsCommentaires)}</div>
-      <div class="fld-row"><div class="fld-lbl">Retours DR</div>${ta('retoursdr','RetoursDR',c.RetoursDR)}</div>
-      <div id="sb-save-ind" class="save-ind">✅ Sauvegardé dans SharePoint</div>
-      ${c.ModifiePar?`<div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px">Modifié par: ${c.ModifiePar}</div>`:''}
-    </div>`;
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Arguments / Commentaires</div>
+      ${editable('args','ArgumentsCommentaires',c.ArgumentsCommentaires,'',true)}
+      <div style="font-size:9px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Retours DR</div>
+      ${editable('retoursdr','RetoursDR',c.RetoursDR,'',true)}
+      <div id="sb-save-ind" style="display:none;font-size:11px;color:var(--G2);font-weight:600;text-align:center;padding:6px;background:var(--GL);border-radius:6px;margin-top:4px">✅ Sauvegardé</div>
+    `)}
+  `;
 
   document.getElementById('sb-overlay').classList.add('open');
   document.getElementById('sidebar').classList.add('open');
