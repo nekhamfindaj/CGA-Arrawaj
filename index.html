@@ -588,7 +588,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
                 </div>
                 <div style="grid-column:span 2">
                   <div class="fld-lbl" style="margin-bottom:3px">Région / Direction</div>
-                  <input type="text" id="nu-region" placeholder="Ex: Dakhla-Oued Ed-Dahab" style="width:100%">
+                  <select id="nu-region" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select>
                 </div>
               </div>
               <!-- Champs cachés remplis automatiquement -->
@@ -620,7 +620,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
                   <div id="nu-email-msg-m" style="font-size:10px;margin-top:3px;display:none"></div>
                 </div>
                 <div><div class="fld-lbl" style="margin-bottom:3px">Nom</div><input type="text" id="nu-nom-m" placeholder="Nom et fonction" style="width:100%"></div>
-                <div style="grid-column:span 2"><div class="fld-lbl" style="margin-bottom:3px">Région</div><input type="text" id="nu-region-m" placeholder="Ex: Dakhla-Oued Ed-Dahab" style="width:100%"></div>
+                <div style="grid-column:span 2"><div class="fld-lbl" style="margin-bottom:3px">Région</div><select id="nu-region-m" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select></div>
               </div>
             </div>
 
@@ -633,10 +633,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         <div class="card">
           <div class="card-hd"><span class="card-title">ℹ️ Paramètres</span></div>
           <div style="font-size:12px;line-height:2;color:#374151">
-            <div>📍 Site : <strong id="inf-site">—</strong></div>
+            <div>📍 Environnement : <strong>Dataverse HIC...</strong></div>
             <div>👑 Admin : <strong>hicham.nekhla@fondation-arrawaj.ma</strong></div>
-            <div>📋 Liste constats : <strong>CGA_Constats</strong></div>
-            <div>👥 Liste mapping : <strong>CGA_RGA_Users</strong></div>
+            <div>📋 Table constats : <strong>cr2c5_cgaconstatses</strong></div>
+            <div>👥 Table users : <strong>cr2c5_cgauserses</strong></div>
             <div id="inf-total" style="margin-top:6px;color:#6B7280"></div>
           </div>
           <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap">
@@ -695,7 +695,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         </div>
         <div style="grid-column:span 2">
           <div class="fld-lbl" style="margin-bottom:3px">Région / Direction</div>
-          <input type="text" id="edit-region" style="width:100%">
+          <select id="edit-region" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select>
         </div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--bd)">
@@ -1053,8 +1053,8 @@ async function loadConstats(periodeJours = null) {
     const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
     // Mapping valeurs numériques Dataverse → labels affichage
-    const criticiteMap = {100000000:'Majeure', 100000001:'Mineure', 100000002:'Observation'};
-    const statutMap    = {100000000:'Nouveau', 100000001:'En cours', 100000002:'Clôturé', 100000003:'Contesté'};
+    const criticiteMap = {0:'Majeure', 1:'Mineure', 2:'Observation'};
+    const statutMap    = {0:'Nouveau', 1:'En cours', 2:'Clôturé', 3:'Contesté'};
     const criticiteVal = criticiteMap[c.cr2c5_criticite] ||
                          c['cr2c5_criticite@OData.Community.Display.V1.FormattedValue'] || 'Non défini';
     const statutVal    = statutMap[c.cr2c5_statut] ||
@@ -1132,7 +1132,7 @@ async function loadRGAUsers() {
 const xlDate = v => typeof v === 'number' ? new Date((v-25569)*86400000).toLocaleDateString('fr-FR') : String(v||'');
 const normCrit = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')) return 'Élevé'; if(s.includes('moy')) return 'Moyen'; if(s.includes('bas')) return 'Bas'; return 'Non défini'; };
 // Criticité en valeur numérique Dataverse : 100000000=Majeure, 100000001=Mineure, 100000002=Observation
-const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')||s.includes('maj')) return 100000000; if(s.includes('moy')||s.includes('min')) return 100000001; if(s.includes('obs')||s.includes('bas')) return 100000002; return 100000001; };
+const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('maj')||s.includes('lev')||s.includes('ele')) return 0; if(s.includes('min')||s.includes('moy')) return 1; if(s.includes('obs')||s.includes('bas')) return 2; return 1; };
 
 async function importCanevas(input) {
   const files = Array.from(input.files);
@@ -1220,7 +1220,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             cr2c5_criticite:           normCritDV(r[12]),
             cr2c5_piecejointe:         String(r[13]||'').substring(0,500),
             cr2c5_recommandationcga:   String(r[14]||'').substring(0,5000),
-            cr2c5_statut:              100000000, // Ouvert
+            cr2c5_statut: 0, // Ouvert
             cr2c5_fichiersource:       file.name.substring(0,200)
           })));
           done += batch.length;
@@ -1244,11 +1244,11 @@ async function updateConstat(id, patch) {
     // Mapper les champs app → champs Dataverse
     const dvPatchData = {};
     if (patch.StatutTraitement !== undefined) {
-      const statutMap = {'Nouveau':100000000,'En cours':100000001,'Clôturé':100000002,'Contesté':100000003};
-      dvPatchData.cr2c5_statut = statutMap[patch.StatutTraitement] ?? 100000000;
+      const statutMap = {'Nouveau':0,'En cours':1,'Clôturé':2,'Contesté':3};
+      dvPatchData.cr2c5_statut = statutMap[patch.StatutTraitement] ?? 0;
     }
     if (patch.ConfirmationConstat !== undefined) {
-      const confMap = {'Confirmé':100000000,'Non confirmé':100000001,'En attente':100000002,'Infirmé':100000001,'':null};
+      const confMap = {'Confirmé':0,'Non confirmé':1,'En attente':2,'Infirmé':1,'':null};
       dvPatchData.cr2c5_confirmationconstat = confMap[patch.ConfirmationConstat] ?? null;
     }
     if (patch.ActionsMesures     !== undefined) dvPatchData.cr2c5_actionsmesures         = patch.ActionsMesures;
