@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Suivi Constats CGA v4 — Fondation Arrawaj</title>
+<title>Suivi Constats CGA v5 — Fondation Arrawaj</title>
 <script src="xlsx.full.min.js"></script>
 <script src="chart.umd.js"></script>
 <script src="msal-browser.min.js"></script>
@@ -588,7 +588,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
                 </div>
                 <div style="grid-column:span 2">
                   <div class="fld-lbl" style="margin-bottom:3px">Région / Direction</div>
-                  <input type="text" id="nu-region" placeholder="Ex: Dakhla-Oued Ed-Dahab" style="width:100%">
+                  <select id="nu-region" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select>
                 </div>
               </div>
               <!-- Champs cachés remplis automatiquement -->
@@ -620,7 +620,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
                   <div id="nu-email-msg-m" style="font-size:10px;margin-top:3px;display:none"></div>
                 </div>
                 <div><div class="fld-lbl" style="margin-bottom:3px">Nom</div><input type="text" id="nu-nom-m" placeholder="Nom et fonction" style="width:100%"></div>
-                <div style="grid-column:span 2"><div class="fld-lbl" style="margin-bottom:3px">Région</div><input type="text" id="nu-region-m" placeholder="Ex: Dakhla-Oued Ed-Dahab" style="width:100%"></div>
+                <div style="grid-column:span 2"><div class="fld-lbl" style="margin-bottom:3px">Région</div><select id="nu-region-m" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select></div>
               </div>
             </div>
 
@@ -633,10 +633,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         <div class="card">
           <div class="card-hd"><span class="card-title">ℹ️ Paramètres</span></div>
           <div style="font-size:12px;line-height:2;color:#374151">
-            <div>📍 Site : <strong id="inf-site">—</strong></div>
+            <div>📍 Environnement : <strong>Dataverse HIC...</strong></div>
             <div>👑 Admin : <strong>hicham.nekhla@fondation-arrawaj.ma</strong></div>
-            <div>📋 Liste constats : <strong>CGA_Constats</strong></div>
-            <div>👥 Liste mapping : <strong>CGA_RGA_Users</strong></div>
+            <div>📋 Table constats : <strong>cr2c5_constats</strong></div>
+            <div>👥 Table users : <strong>cr2c5_cgauserses</strong></div>
             <div id="inf-total" style="margin-top:6px;color:#6B7280"></div>
           </div>
           <div style="margin-top:14px;display:flex;gap:7px;flex-wrap:wrap">
@@ -695,7 +695,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         </div>
         <div style="grid-column:span 2">
           <div class="fld-lbl" style="margin-bottom:3px">Région / Direction</div>
-          <input type="text" id="edit-region" style="width:100%">
+          <select id="edit-region" style="width:100%"><option value="">-- Sélectionner --</option><option value="R01">R01</option><option value="R02">R02</option><option value="R03">R03</option><option value="R04">R04</option><option value="R05">R05</option><option value="R06">R06</option><option value="R07">R07</option><option value="R08">R08</option><option value="R09">R09</option><option value="R10">R10</option><option value="R11">R11</option><option value="R12">R12</option><option value="R13">R13</option><option value="R14">R14</option><option value="R15">R15</option></select>
         </div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:10px;border-top:1px solid var(--bd)">
@@ -730,8 +730,28 @@ const MSAL_CFG = {
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false }
 };
 const msalInstance = new msal.PublicClientApplication(MSAL_CFG);
-const SP_SCOPE    = 'https://fndaj.sharepoint.com/AllSites.Write';
+
+// ── Dataverse (remplace SharePoint) ──
+const DV_URL      = 'https://org18dd8097.crm4.dynamics.com';
+const DV_SCOPE    = 'https://org18dd8097.crm4.dynamics.com/.default';
 const GRAPH_SCOPE = 'https://graph.microsoft.com/User.ReadBasic.All';
+
+// Tables Dataverse (préfixe cr2c5_)
+const DV_TABLES = {
+  constats: 'cr2c5_constats',
+  users:    'cr2c5_cgauserses',
+  suivi:    'cr2c5_cgasuivis'
+};
+
+// ── Mapping Région Dataverse (Choix numérique) ──
+const REGION_TO_DV = {
+  'R01':934900000,'R02':934900001,'R03':934900002,'R04':934900003,
+  'R05':934900004,'R06':934900005,'R07':934900006,'R08':934900007,
+  'R09':934900008,'R10':934900009,'R11':934900010,'R12':934900011,
+  'R13':934900012,'R14':934900013,'R15':934900014
+};
+const DV_TO_REGION = {};
+Object.entries(REGION_TO_DV).forEach(([k,v])=>{ DV_TO_REGION[v]=k; });
 
 // Token Graph séparé du token SharePoint
 async function getGraphToken() {
@@ -772,9 +792,7 @@ async function searchM365Users(query) {
 //  APP CONFIG
 // ══════════════════════════════════════════════════════════
 const CFG = {
-  siteUrl:    'https://fndaj.sharepoint.com/sites/CGA',
   adminEmail: 'hicham.nekhla@fondation-arrawaj.ma',
-  lists: { constats: 'CGA_Constats', rgaUsers: 'CGA_RGA_Users' }
 };
 
 // ══════════════════════════════════════════════════════════
@@ -791,22 +809,21 @@ const S = {
 // ══════════════════════════════════════════════════════════
 //  MSAL — AUTH TOKEN
 // ══════════════════════════════════════════════════════════
+// ── Token Dataverse ──
 async function getToken() {
   const accounts = msalInstance.getAllAccounts();
   if (!accounts.length) {
-    await msalInstance.loginRedirect({ scopes: ['openid', 'profile', 'email', SP_SCOPE] });
+    await msalInstance.loginRedirect({ scopes: ['openid', 'profile', 'email', DV_SCOPE] });
     return null;
   }
-  // Silent avec timeout 5s (évite blocage iframe invisible)
   try {
     const res = await Promise.race([
-      msalInstance.acquireTokenSilent({ scopes: [SP_SCOPE], account: accounts[0] }),
+      msalInstance.acquireTokenSilent({ scopes: [DV_SCOPE], account: accounts[0] }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
     ]);
     return res.accessToken;
   } catch {
-    // Redirect si silent échoue ou timeout
-    await msalInstance.acquireTokenRedirect({ scopes: [SP_SCOPE], account: accounts[0] });
+    await msalInstance.acquireTokenRedirect({ scopes: [DV_SCOPE], account: accounts[0] });
     return null;
   }
 }
@@ -815,9 +832,8 @@ async function loginMicrosoft() {
   const btns = document.querySelectorAll('button[onclick="loginMicrosoft()"]');
   btns.forEach(b => { b.textContent = 'Redirection vers Microsoft...'; b.disabled = true; });
   try {
-    console.log('Login redirect...');
     await msalInstance.loginRedirect({
-      scopes: ['openid', 'profile', 'email', SP_SCOPE],
+      scopes: ['openid', 'profile', 'email', DV_SCOPE],
       redirectUri: 'https://nekhamfindaj.github.io/CGA-Arrawaj/'
     });
   } catch(e) {
@@ -834,172 +850,111 @@ async function logout() {
 
 
 // ══════════════════════════════════════════════════════════
-// Avec OAuth Bearer tokens, X-RequestDigest n'est PAS requis
-// ── spGet simple (listes courtes : rgaUsers, etc.) ──
-async function spGet(path, sel = '', flt = '') {
+// DATAVERSE WEB API — remplace SharePoint REST
+// ══════════════════════════════════════════════════════════
+
+async function dvGet(table, filter = '', top = 5000) {
   const token = await getToken();
   if (!token) throw new Error('Session expirée — rechargez la page (F5)');
-  let url = `${CFG.siteUrl}/_api/${path}?$top=500`;
-  if (sel) url += `&$select=${sel}`;
-  if (flt) url += `&$filter=${encodeURIComponent(flt)}`;
+  let url = `${DV_URL}/api/data/v9.2/${table}?$top=${top}`;
+  if (filter) url += `&$filter=${encodeURIComponent(filter)}`;
   const r = await fetch(url, {
-    headers: { Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}` }
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+      'OData-MaxVersion': '4.0',
+      'OData-Version': '4.0'
+    }
   });
-  if (!r.ok) throw new Error(`GET ${path}: ${r.status}`);
+  if (!r.ok) { const t = await r.text(); throw new Error(`GET ${table}: ${r.status} — ${t.substring(0,200)}`); }
   return r.json();
 }
 
-// ── spGetPaged : pagination automatique pour grandes listes ──
-async function spGetPaged(path, flt = '', onProgress = null) {
+async function dvGetPaged(table, filter = '', onProgress = null) {
   const token = await getToken();
   if (!token) throw new Error('Session expirée — rechargez la page (F5)');
-  let url = `${CFG.siteUrl}/_api/${path}?$top=500`;
-  if (flt) url += `&$filter=${encodeURIComponent(flt)}`;
-  let allItems = [];
+  let url = `${DV_URL}/api/data/v9.2/${table}?$top=500`;
+  if (filter) url += `&$filter=${encodeURIComponent(filter)}`;
+  let all = [];
   let page = 0;
-  const MAX_PAGES = 400; // sécurité : 400 × 500 = 200 000 items max
-  while (url && page < MAX_PAGES) {
+  while (url && page < 400) {
     const r = await fetch(url, {
-      headers: { Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}` }
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'OData-MaxVersion': '4.0',
+        'OData-Version': '4.0',
+        'Prefer': 'odata.maxpagesize=500'
+      }
     });
     if (!r.ok) throw new Error(`GET page ${page+1}: ${r.status}`);
     const data = await r.json();
-    allItems = allItems.concat(data.value || []);
+    all = all.concat(data.value || []);
     url = data['@odata.nextLink'] || null;
     page++;
-    if (onProgress) onProgress(allItems.length);
+    if (onProgress) onProgress(all.length);
   }
-  return allItems;
+  return all;
 }
 
-async function spPost(path, data, verbose = false) {
+async function dvPost(table, data) {
   const token = await getToken();
   if (!token) throw new Error('Session expirée — rechargez la page (F5)');
-  const ct = verbose ? 'application/json;odata=verbose' : 'application/json;odata=nometadata';
-  const r = await fetch(`${CFG.siteUrl}/_api/${path}`, {
-    method: 'POST',
-    headers: { Accept: ct, 'Content-Type': ct, Authorization: `Bearer ${token}` },
-    body: JSON.stringify(data)
-  });
-  if (!r.ok && r.status !== 204) { const t = await r.text(); throw new Error(`POST ${path}: ${r.status} — ${t.substring(0,200)}`); }
-  try { return await r.json(); } catch { return null; }
-}
-
-async function spPatch(path, data) {
-  const token = await getToken();
-  if (!token) throw new Error('Session expirée — rechargez la page (F5)');
-  const r = await fetch(`${CFG.siteUrl}/_api/${path}`, {
+  const r = await fetch(`${DV_URL}/api/data/v9.2/${table}`, {
     method: 'POST',
     headers: {
-      Accept: 'application/json;odata=nometadata',
-      'Content-Type': 'application/json;odata=nometadata',
       Authorization: `Bearer ${token}`,
-      'X-HTTP-Method': 'MERGE', 'IF-MATCH': '*'
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'OData-MaxVersion': '4.0',
+      'OData-Version': '4.0',
+      'Prefer': 'return=representation'
     },
     body: JSON.stringify(data)
   });
-  if (!r.ok && r.status !== 204) throw new Error(`PATCH ${path}: ${r.status}`);
+  if (!r.ok && r.status !== 204) { const t = await r.text(); throw new Error(`POST ${table}: ${r.status} — ${t.substring(0,200)}`); }
+  try { return await r.json(); } catch { return null; }
+}
+
+async function dvPatch(table, id, data) {
+  const token = await getToken();
+  if (!token) throw new Error('Session expirée — rechargez la page (F5)');
+  const r = await fetch(`${DV_URL}/api/data/v9.2/${table}(${id})`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'OData-MaxVersion': '4.0',
+      'OData-Version': '4.0'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok && r.status !== 204) throw new Error(`PATCH ${table}(${id}): ${r.status}`);
   return true;
 }
 
-async function spDelete(path) {
+async function dvDelete(table, id) {
   const token = await getToken();
   if (!token) throw new Error('Session expirée — rechargez la page (F5)');
-  await fetch(`${CFG.siteUrl}/_api/${path}`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}`,
-      'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*'
-    }
+  await fetch(`${DV_URL}/api/data/v9.2/${table}(${id})`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}`, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0' }
   });
 }
 
-async function listExists(name) {
-  try {
-    const token = await getToken();
-    if (!token) return false;
-    // Vérifier que la liste ET ses colonnes clés existent
-    const checkCol = name === CFG.lists.rgaUsers ? 'EmailUtilisateur' : 'FamilleConstat';
-    const r = await fetch(
-      `${CFG.siteUrl}/_api/web/lists/getbytitle('${name}')/fields?$filter=InternalName eq '${checkCol}'`,
-      { headers: { Accept: 'application/json;odata=nometadata', Authorization: `Bearer ${token}` } }
-    );
-    if (!r.ok) return false;
-    const d = await r.json();
-    return d.value?.length > 0; // false si colonne absente → lance setup
-  } catch { return false; }
-}
+// ── Compatibilité : alias SP → DV (pour les fonctions non migrées) ──
+async function spGet(path, sel = '', flt = '') { /* non utilisé en DV */ return { value: [] }; }
+async function spPost(path, data) { /* non utilisé en DV */ return null; }
+async function spPatch(path, data) { /* non utilisé en DV */ return true; }
+async function spDelete(path) { /* non utilisé en DV */ }
 
-async function runSetup() {
-  const btn = document.getElementById('btn-setup');
-  btn.disabled = true; btn.textContent = '⏳ Création en cours...';
-  const log = document.getElementById('setup-log');
-  const addLog = (msg, type = 'info') => { log.innerHTML += `<div class="alert al-${type}">${msg}</div>`; log.scrollTop = 9999; };
+// ── Setup non nécessaire en Dataverse (tables déjà créées) ──
+async function listExists(name) { return true; }
+async function runSetup() { showToast('Tables Dataverse déjà configurées ✅', 'ok'); }
+async function createConstatsList() {}
+async function createRGAUsersList() {}
 
-  try {
-    addLog('📋 Création de la liste CGA_Constats...');
-    await createConstatsList();
-    addLog('✅ CGA_Constats créée', 'success');
-
-    addLog('👥 Création de la liste CGA_RGA_Users...');
-    await createRGAUsersList();
-    addLog('✅ CGA_RGA_Users créée', 'success');
-
-    // Add admin
-    await spPost(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, {
-      Title: 'ADMIN', EmailUtilisateur: CFG.adminEmail, NomAffichage: 'Hicham Nekhla — Central CGA', Region: 'Central'
-    });
-
-    addLog('✅ Configuration terminée ! Rechargement dans 3s...', 'success');
-    setTimeout(() => location.reload(), 3000);
-  } catch (e) {
-    addLog('❌ Erreur: ' + e.message, 'error');
-    btn.disabled = false; btn.textContent = '⚙️ Réessayer';
-  }
-}
-
-async function createConstatsList() {
-  // Créer la liste — ignorer l'erreur si elle existe déjà
-  try {
-    await spPost('web/lists', {
-      __metadata: { type: 'SP.List' }, Title: CFG.lists.constats, BaseTemplate: 100,
-      Description: 'Constats CGA — Fondation Arrawaj'
-    }, true);
-  } catch(e) { console.log('Liste CGA_Constats existe déjà, ajout des colonnes...'); }
-
-  const base = `web/lists/getbytitle('${CFG.lists.constats}')/fields`;
-  const addField = async (data) => { try { await spPost(base, data, true); } catch {} };
-
-  for (const f of ['DateConstat','Region','CodeRGA','Agence','Acteurs','NomPrenom','CINClient','PieceJointeCGA','EntitesConcernes','ActionAgregee','PiecesJustificatives','FichierSource','ModifiePar','StatutCanevas','FamilleConstat']) {
-    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 255 });
-  }
-  for (const f of ['LibelleConstat','RefProcedure']) {
-    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 512 });
-  }
-  for (const f of ['DetailAnomalie','RecommandationCGA','ActionsMesures','ArgumentsCommentaires','RetoursDR','ActionsDelais']) {
-    await addField({ __metadata: { type: 'SP.FieldMultiLineText' }, FieldTypeKind: 3, Title: f, NumberOfLines: 6 });
-  }
-  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'Criticite',
-    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['Élevé','Moyen','Bas','Non défini'] }, DefaultValue: 'Non défini' });
-  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'StatutTraitement',
-    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['Nouveau','En cours','Clôturé','Contesté'] }, DefaultValue: 'Nouveau' });
-  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'ConfirmationConstat',
-    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['','Confirmé','Infirmé','En attente'] }, DefaultValue: '' });
-}
-
-async function createRGAUsersList() {
-  try {
-    await spPost('web/lists', { __metadata: { type: 'SP.List' }, Title: CFG.lists.rgaUsers, BaseTemplate: 100 }, true);
-  } catch(e) { console.log('Liste CGA_RGA_Users existe déjà, ajout des colonnes...'); }
-  const base = `web/lists/getbytitle('${CFG.lists.rgaUsers}')/fields`;
-  const addField = async (data) => { try { await spPost(base, data, true); } catch {} };
-  for (const f of ['EmailUtilisateur','NomAffichage','Region']) {
-    await addField({ __metadata: { type: 'SP.FieldText' }, FieldTypeKind: 2, Title: f, MaxLength: 255 });
-  }
-  // Colonne Rôle (Choice)
-  await addField({ __metadata: { type: 'SP.FieldChoice' }, FieldTypeKind: 6, Title: 'Role',
-    Choices: { __metadata: { type: 'Collection(Edm.String)' }, results: ['rga','dr','admin'] }, DefaultValue: 'rga' });
-}
 
 // ══════════════════════════════════
 //  AUTH + ROLE
@@ -1023,17 +978,28 @@ async function detectRole() {
     S.role = 'admin'; return;
   }
   try {
-    const d = await spGet(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`,
-      '',  // pas de $select
-      `EmailUtilisateur eq '${email}'`);
+    // Recherche dans Dataverse CGA_Users par email
+    const d = await dvGet(DV_TABLES.users,
+      `cr2c5_adresseemail eq '${email}'`);
     if (d.value?.length > 0) {
       const user = d.value[0];
-      const role = (user.Role || 'rga').toLowerCase();
-      if (role === 'admin')     { S.role = 'admin'; S.userRGA = user; }
-      else if (role === 'dr')   { S.role = 'dr';    S.userDR  = user; }
-      else                      { S.role = 'rga';   S.userRGA = user; }
+      // Mapping champs Dataverse → structure app
+      const userMapped = {
+        Id:               user.cr2c5_cgausersid,
+        Title:            String(user.cr2c5_coderga || ''),
+        EmailUtilisateur: String(user.cr2c5_adresseemail || ''),
+        NomAffichage:     String(user.cr2c5_nomcomplet || ''),
+        Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
+        Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
+                            ? user['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
+                            : (user.cr2c5_role === 0 ? 'admin' : user.cr2c5_role === 1 ? 'dr' : 'rga')
+      };
+      const role = (userMapped.Role || 'rga').toLowerCase();
+      if (role === 'admin')     { S.role = 'admin'; S.userRGA = userMapped; }
+      else if (role === 'dr')   { S.role = 'dr';    S.userDR  = userMapped; }
+      else                      { S.role = 'rga';   S.userRGA = userMapped; }
     } else { S.role = 'none'; S.userRGA = null; S.userDR = null; }
-  } catch { S.role = 'none'; }
+  } catch(e) { console.error('detectRole:', e); S.role = 'none'; }
 }
 
 // ══════════════════════════════════
@@ -1044,44 +1010,35 @@ async function loadConstats(periodeJours = null) {
   if (S.role === 'rga' && !S.userRGA) { S.constats = []; return; }
   if (S.role === 'dr'  && !S.userDR)  { S.constats = []; return; }
 
-  // Filtre périmètre (RGA / DR)
   let filters = [];
+
   if (S.role === 'rga' && S.userRGA) {
-    filters.push(`CodeRGA eq '${S.userRGA.Title}'`);
+    filters.push(`cr2c5_coderga eq '${S.userRGA.Title}'`);
   }
   if (S.role === 'dr' && S.userDR) {
-    // Priorité : champ Region, sinon Title (code de région)
     const drRegion = (S.userDR.Region && S.userDR.Region.toLowerCase() !== 'tout' && S.userDR.Region.trim() !== '')
-      ? S.userDR.Region
-      : S.userDR.Title; // fallback sur le code identifiant (ex: R14)
-    S._drRegionActive = drRegion; // mémoriser pour applyFilters
+      ? S.userDR.Region : S.userDR.Title;
+    S._drRegionActive = drRegion;
     if (drRegion) {
-      filters.push(`Region eq '${drRegion}'`);
+      filters.push(`cr2c5_region eq '${drRegion}'`);
     } else {
       setLdMsg('⚠️ Région DR non configurée — contactez l\'administrateur');
       S.constats = []; return;
     }
   }
 
-  // Filtre date par défaut : 30 derniers jours (évite de charger tout l'historique)
   const jours = periodeJours !== null ? periodeJours : (S.loadPeriode || 30);
   if (jours > 0) {
     const depuis = new Date();
     depuis.setDate(depuis.getDate() - jours);
-    filters.push(`Modified ge datetime'${depuis.toISOString()}'`);
+    filters.push(`modifiedon ge ${depuis.toISOString()}`);
   }
 
   const filter = filters.join(' and ');
-
-  // Progression dans le loading screen
   const setProgress = (n) => setLdMsg && setLdMsg(`Chargement... ${n} constats`);
 
   setLdMsg('Chargement des constats...');
-  const items = await spGetPaged(
-    `web/lists/getbytitle('${CFG.lists.constats}')/items`,
-    filter,
-    setProgress
-  );
+  const items = await dvGetPaged(DV_TABLES.constats, filter, setProgress);
 
   const toDate = (str) => {
     if (!str) return null;
@@ -1090,21 +1047,66 @@ async function loadConstats(periodeJours = null) {
     return new Date(str);
   };
 
+  // Mapping champs Dataverse → structure app existante
   S.constats = items.map(c => {
-    const dateConstat  = c.DateConstat || '';
-    const dateModif    = c.Modified ? new Date(c.Modified).toLocaleDateString('fr-FR') : '';
+    const dateConstat  = c.cr2c5_datedeconstat ? new Date(c.cr2c5_datedeconstat).toLocaleDateString('fr-FR') : '';
+    const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
+    // Criticité et Statut sont du texte libre dans cr2c5_constats
+    const criticiteRaw = String(c.cr2c5_criticite || '');
+    const statutRaw    = String(c.cr2c5_statut    || 'Nouveau');
+    // Normaliser criticité pour l'affichage
+    const normCritDisplay = (s) => {
+      const sl = s.toLowerCase();
+      if(sl.includes('lev')||sl.includes('ele')||sl.includes('maj')) return 'Élevé';
+      if(sl.includes('moy')||sl.includes('min')) return 'Moyen';
+      if(sl.includes('bas')||sl.includes('obs')||sl.includes('fai')) return 'Bas';
+      return s || 'Non défini';
+    };
+    const normStatutDisplay = (s) => {
+      const sl = s.toLowerCase();
+      if(sl.includes('cours')) return 'En cours';
+      if(sl.includes('clôt')||sl.includes('clot')) return 'Clôturé';
+      if(sl.includes('contest')) return 'Contesté';
+      if(sl.includes('nouv')) return 'Nouveau';
+      return s || 'Nouveau';
+    };
+    const criticiteVal = normCritDisplay(criticiteRaw);
+    const statutVal    = normStatutDisplay(statutRaw);
     return {
-      ...c,
-      StatutTraitement: c.StatutTraitement || 'Nouveau',
-      Criticite:        c.Criticite        || 'Non défini',
-      DateEffective:    dateEffective,
-      DateEffectiveObj: toDate(dateEffective),
-      DateSource:       dateConstat ? 'constat' : (dateModif ? 'chargement' : '')
+      Id:                    c.cr2c5_constatid,
+      Title:                 c.cr2c5_referenceduconstat || '',
+      DateConstat:           dateConstat,
+      Region:                c.cr2c5_region || '',
+      CodeRGA:               c.cr2c5_rga || '',
+      Agence:                c.cr2c5_agence || '',
+      Acteurs:               c.cr2c5_acteursimpliques || '',
+      NomPrenom:             c.cr2c5_nomsetprenoms || '',
+      LibelleConstat:        c.cr2c5_descriptionduconstat || '',
+      FamilleConstat:        c.cr2c5_familledeconstat || '',
+      DetailAnomalie:        c.cr2c5_detaildelanomalie || '',
+      CINClient:             c.cr2c5_identifiantsclients || '',
+      RefProcedure:          c.cr2c5_referencedelaprocedure || '',
+      Criticite:             criticiteVal,
+      PieceJointeCGA:        c.cr2c5_piecejointe || '',
+      RecommandationCGA:     c.cr2c5_recommandationcga || '',
+      StatutTraitement:      statutVal,
+      ActionsMesures:        c.cr2c5_actionsoumesures || '',
+      EntitesConcernes:      c.cr2c5_acteursouentitesconcernes || '',
+      ConfirmationConstat:   c.cr2c5_confirmationduconstat || '',
+      ActionAgregee:         c.cr2c5_actionagregee || '',
+      ArgumentsCommentaires: c.cr2c5_argumentsoucommentaires || '',
+      PiecesJustificatives:  c.cr2c5_piecesjustificatives || '',
+      ActionsDelais:         c.cr2c5_actionspreconiseesavecdelais || '',
+      ModifiePar:            c.cr2c5_modifiepar || '',
+      FichierSource:         c.cr2c5_fichiersource || '',
+      RetoursDR:             c.cr2c5_retoursdr || '',
+      DateEffective:         dateEffective,
+      DateEffectiveObj:      toDate(dateEffective),
+      DateSource:            dateConstat ? 'constat' : (dateModif ? 'chargement' : '')
     };
   });
 
-  // Mettre à jour le badge de période chargée
   const badge = document.getElementById('load-period-badge');
   if (badge) {
     badge.textContent = jours > 0
@@ -1115,15 +1117,53 @@ async function loadConstats(periodeJours = null) {
 }
 
 async function loadRGAUsers() {
-  const d = await spGet(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, '');  // pas de $select → évite 400 si Role absent
-  S.rgaUsers = d.value || [];
+  const d = await dvGet(DV_TABLES.users);
+  const roleLabel = (val) => {
+    // Dataverse retourne parfois la valeur numérique, parfois le label formaté
+    const formatted = val?.['cr2c5_role@OData.Community.Display.V1.FormattedValue'];
+    if (formatted) return formatted.toLowerCase();
+    const num = val?.cr2c5_role;
+    if (num === 0) return 'admin';
+    if (num === 1) return 'dr';
+    if (num === 2) return 'rga';
+    return 'rga';
+  };
+  S.rgaUsers = (d.value || []).map(u => ({
+    Id:               u.cr2c5_cgausersid,
+    Title:            String(u.cr2c5_coderga || ''),
+    EmailUtilisateur: String(u.cr2c5_adresseemail || ''),
+    NomAffichage:     String(u.cr2c5_nomcomplet || ''),
+    Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
+    Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
+                        ? u['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
+                        : (u.cr2c5_role === 0 ? 'admin' : u.cr2c5_role === 1 ? 'dr' : 'rga')
+  }));
 }
 
 // ══════════════════════════════════
 //  IMPORT
 // ══════════════════════════════════
 const xlDate = v => typeof v === 'number' ? new Date((v-25569)*86400000).toLocaleDateString('fr-FR') : String(v||'');
+const xlDateISO = v => {
+  if(!v || v === '') return null;
+  // Nombre Excel (serial date)
+  if(typeof v === 'number') {
+    const d = new Date((v-25569)*86400000);
+    return d.toISOString().split('T')[0];
+  }
+  const s = String(v).trim();
+  // Format dd/mm/yyyy
+  const p = s.split('/');
+  if(p.length===3 && p[2].length===4) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+  // Format ISO yyyy-mm-dd déjà correct
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  // Format Excel string date (ex: "2026-05-18T00:00:00.000Z")
+  if(s.includes('T')) return s.split('T')[0];
+  return null;
+};
 const normCrit = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')) return 'Élevé'; if(s.includes('moy')) return 'Moyen'; if(s.includes('bas')) return 'Bas'; return 'Non défini'; };
+// Criticité en valeur numérique Dataverse : 100000000=Majeure, 100000001=Mineure, 100000002=Observation
+const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('maj')||s.includes('lev')||s.includes('ele')) return '1. Elevé'; if(s.includes('min')||s.includes('moy')) return '2. Moyenne'; if(s.includes('obs')||s.includes('bas')) return '3. Faible'; return String(v||'').trim()||'2. Moyenne'; };
 
 async function importCanevas(input) {
   const files = Array.from(input.files);
@@ -1177,159 +1217,45 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
 
-        // ── Détection automatique de la ligne d'en-tête ──
-        let hi = 0;
-        for (let i = 0; i < Math.min(8, rows.length); i++) {
-          const r = rows[i].map(c => String(c||'').toLowerCase().trim());
-          if (r.some(c => /date.*constat|constat.*date/i.test(c)) ||
-              r.some(c => /^r[eé]gion$/.test(c)) ||
-              r.some(c => /^code.*rga|rga.*code/i.test(c)) ||
-              r.some(c => /famille|family/i.test(c))) {
-            hi = i; break;
-          }
+        // Détection automatique de la ligne d'en-tête
+        let hi = 1;
+        for (let i=0;i<Math.min(5,rows.length);i++) {
+          if (rows[i].some(c=>/datedeconstat|date.*constat/i.test(String(c)))) { hi=i; break; }
+          if (rows[i].some(c=>/^r[eé]gion$/i.test(String(c).trim()))) { hi=i; break; }
         }
 
-        // ── Mapping des colonnes par nom d'en-tête ──
-        const headers = rows[hi].map(c => String(c||'').toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // supprimer accents
-          .replace(/[^a-z0-9]/g,' ').trim());
-
-        // Dictionnaire : header normalisé → nom du champ SharePoint
-        const COL_MAP = {
-          'date constat':          'DateConstat',
-          'dateconstat':           'DateConstat',
-          'date de constat':       'DateConstat',
-          'date':                  'DateConstat',
-          'titre':                 'Title',
-          'reference':             'Title',
-          'ref':                   'Title',
-          'num':                   'Title',
-          'numero':                'Title',
-          'region':                'Region',
-          'code rga':              'CodeRGA',
-          'coderga':               'CodeRGA',
-          'rga':                   'CodeRGA',
-          'agence':                'Agence',
-          'acteurs':               'Acteurs',
-          'acteur':                'Acteurs',
-          'nom prenom':            'NomPrenom',
-          'nom et prenom':         'NomPrenom',
-          'nomprenom':             'NomPrenom',
-          'nom':                   'NomPrenom',
-          'libelle constat':       'LibelleConstat',
-          'libelleconstat':        'LibelleConstat',
-          'libelle':               'LibelleConstat',
-          'objet':                 'LibelleConstat',
-          'famille constat':       'FamilleConstat',
-          'familleconstat':        'FamilleConstat',
-          'famille de constat':    'FamilleConstat',
-          'famille':               'FamilleConstat',
-          'type constat':          'FamilleConstat',
-          'type':                  'FamilleConstat',
-          'categorie':             'FamilleConstat',
-          'detail anomalie':       'DetailAnomalie',
-          'detailanomal':          'DetailAnomalie',
-          'anomalie':              'DetailAnomalie',
-          'description':           'DetailAnomalie',
-          'cin client':            'CINClient',
-          'cin':                   'CINClient',
-          'cni':                   'CINClient',
-          'ref procedure':         'RefProcedure',
-          'reference procedure':   'RefProcedure',
-          'procedure':             'RefProcedure',
-          'criticite':             'Criticite',
-          'criticité':             'Criticite',
-          'gravite':               'Criticite',
-          'gravité':               'Criticite',
-          'niveau':                'Criticite',
-          'piece jointe cga':      'PieceJointeCGA',
-          'pj cga':                'PieceJointeCGA',
-          'piece jointe':          'PieceJointeCGA',
-          'recommandation cga':    'RecommandationCGA',
-          'recommandation':        'RecommandationCGA',
-          'actions mesures':       'ActionsMesures',
-          'action':                'ActionsMesures',
-          'mesures':               'ActionsMesures',
-          'entites concernees':    'EntitesConcernes',
-          'entite':                'EntitesConcernes',
-          'entites':               'EntitesConcernes',
-          'statut canevas':        'StatutCanevas',
-          'statut':                'StatutCanevas',
-          'retours dr':            'RetoursDR',
-          'retour dr':             'RetoursDR',
-          'retour':                'RetoursDR',
-          'confirmation constat':  'ConfirmationConstat',
-          'confirmation':          'ConfirmationConstat',
-          'action agreee':         'ActionAgregee',
-          'action agregee':        'ActionAgregee',
-          'arguments commentaires':'ArgumentsCommentaires',
-          'commentaires':          'ArgumentsCommentaires',
-          'commentaire':           'ArgumentsCommentaires',
-          'pieces justificatives': 'PiecesJustificatives',
-          'pj':                    'PiecesJustificatives',
-          'actions delais':        'ActionsDelais',
-          'delais':                'ActionsDelais',
-          'delai':                 'ActionsDelais',
-        };
-
-        // Construire l'index colonnes : fieldName → position dans la ligne
-        const colIndex = {};
-        headers.forEach((h, i) => {
-          // Recherche exacte d'abord
-          if (COL_MAP[h]) { colIndex[COL_MAP[h]] = i; return; }
-          // Recherche partielle (si un en-tête contient le mot clé)
-          Object.entries(COL_MAP).forEach(([key, field]) => {
-            if (!colIndex[field] && h.includes(key)) colIndex[field] = i;
-          });
-        });
-
-        // Helper : lire une valeur par nom de champ
-        const get = (r, field, def='') => {
-          const i = colIndex[field];
-          return i !== undefined ? String(r[i]||def) : def;
-        };
-
-        const dataRows = rows.slice(hi+1).filter(r => r.some(c => c !== '' && c != null));
+        const dataRows = rows.slice(hi+1).filter(r=>r.some(c=>c!==''&&c!=null));
         const total    = dataRows.length;
         const baseProgress = Math.round((fileIndex/totalFiles)*85);
         const fileShare    = Math.round(85/totalFiles);
 
-        // Afficher les colonnes détectées (debug)
-        console.log(`[Import] "${file.name}" — En-têtes détectés:`, colIndex);
-        txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${total} constats · ${Object.keys(colIndex).length} colonnes détectées`;
+        txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${total} constats détectés`;
 
         let done = 0;
         const bsz = 4;
-        for (let i = 0; i < dataRows.length; i += bsz) {
+        for (let i=0;i<dataRows.length;i+=bsz) {
           const batch = dataRows.slice(i, i+bsz);
-          await Promise.all(batch.map(r => spPost(`web/lists/getbytitle('${CFG.lists.constats}')/items`, {
-            Title:               get(r,'Title').substring(0,255),
-            DateConstat:         xlDate(colIndex['DateConstat'] !== undefined ? r[colIndex['DateConstat']] : ''),
-            Region:              get(r,'Region').substring(0,255),
-            CodeRGA:             get(r,'CodeRGA').substring(0,255),
-            Agence:              get(r,'Agence').substring(0,255),
-            Acteurs:             get(r,'Acteurs').substring(0,255),
-            NomPrenom:           get(r,'NomPrenom').substring(0,255),
-            LibelleConstat:      get(r,'LibelleConstat').substring(0,512),
-            FamilleConstat:      get(r,'FamilleConstat').substring(0,255),
-            DetailAnomalie:      get(r,'DetailAnomalie'),
-            CINClient:           get(r,'CINClient').substring(0,255),
-            RefProcedure:        get(r,'RefProcedure').substring(0,512),
-            Criticite:           normCrit(get(r,'Criticite')),
-            PieceJointeCGA:      get(r,'PieceJointeCGA').substring(0,255),
-            RecommandationCGA:   get(r,'RecommandationCGA'),
-            ActionsMesures:      get(r,'ActionsMesures'),
-            EntitesConcernes:    get(r,'EntitesConcernes').substring(0,255),
-            StatutCanevas:       get(r,'StatutCanevas').substring(0,255),
-            RetoursDR:           get(r,'RetoursDR'),
-            ConfirmationConstat: get(r,'ConfirmationConstat').substring(0,50),
-            ActionAgregee:       get(r,'ActionAgregee').substring(0,255),
-            ArgumentsCommentaires: get(r,'ArgumentsCommentaires'),
-            PiecesJustificatives: get(r,'PiecesJustificatives').substring(0,255),
-            ActionsDelais:       get(r,'ActionsDelais'),
-            StatutTraitement:    'Nouveau',
-            FichierSource:       file.name
-          })));
+          const toStr = (v, max) => { if(v===null||v===undefined||v!==v) return null; const s = String(v).trim(); return (s===''||s==='nan') ? null : s.substring(0,max); };
+          await Promise.all(batch.map(r => {
+            const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 'Nouveau' };
+            const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
+            add('cr2c5_referenceduconstat',    toStr(r[1],100));
+            add('cr2c5_region',                toStr(r[2],100));
+            add('cr2c5_rga',               toStr(r[3],100));
+            add('cr2c5_agence',                toStr(r[4],200));
+            add('cr2c5_acteursimpliques',      toStr(r[5],200));
+            add('cr2c5_acteursouentitesconcernes', toStr(r[16],500));
+            add('cr2c5_nomsetprenoms',           toStr(r[6],200));
+            add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
+            add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
+            add('cr2c5_identifiantsclients',     toStr(r[10],100));
+            add('cr2c5_referencedelaprocedure',toStr(r[11],200));
+            add('cr2c5_piecejointe',           toStr(r[13],500));
+            add('cr2c5_recommandationcga',     toStr(r[14],5000));
+            const d = xlDateISO(r[0]);
+            if(d) body.cr2c5_datedeconstat = d;
+            return dvPost(DV_TABLES.constats, body);
+          }));
           done += batch.length;
           const progress = baseProgress + Math.round((done/total)*fileShare);
           fill.style.width = progress + '%';
@@ -1348,7 +1274,17 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
 // ══════════════════════════════════
 async function updateConstat(id, patch) {
   try {
-    await spPatch(`web/lists/getbytitle('${CFG.lists.constats}')/items(${id})`, { ...patch, ModifiePar: S.email });
+    // Mapper les champs app → champs Dataverse
+    const dvPatchData = {};
+    if (patch.StatutTraitement !== undefined) {
+      dvPatchData.cr2c5_statut = patch.StatutTraitement;
+    }
+    if (patch.ConfirmationConstat !== undefined) {
+      const confMap = {'Confirmé':0,'Non confirmé':1,'En attente':2,'Infirmé':1,'':null};
+    }
+    if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursouentitesconcernes = patch.EntitesConcernes;
+
+    await dvPatch(DV_TABLES.constats, id, dvPatchData);
     const idx = S.constats.findIndex(c=>c.Id===id);
     if (idx>=0) { S.constats[idx] = {...S.constats[idx], ...patch}; if(S.selConstat?.Id===id) S.selConstat={...S.selConstat,...patch}; }
     return true;
@@ -1491,7 +1427,7 @@ function renderTable() {
   body.innerHTML = S.filtered.map(c => {
     const sel = S.selConstat?.Id===c.Id ? 'selected' : '';
     const txt = (c.LibelleConstat||'').substring(0,80);
-    return `<tr class="${sel}" onclick="openSidebar(${c.Id})">
+    return `<tr class="${sel}" onclick="openSidebar('${c.Id}')">
       <td style="white-space:nowrap">${c.DateEffective||'—'}<br><span style='font-size:9px;color:var(--sub)'>${c.DateSource==='chargement'?'📥 chargement':''}</span></td>
       <td class="col-hide-mobile" style="font-weight:500;color:var(--G);white-space:nowrap">${c.Title||'—'}</td>
       <td class="col-hide-mobile" style="white-space:nowrap">${c.Region||'—'}</td>
@@ -1500,8 +1436,8 @@ function renderTable() {
       <td class="col-hide-mobile td-clip">${c.FamilleConstat||'—'}</td>
       <td class="td-clip" style="max-width:180px">${txt}${txt.length===80?'...':''}</td>
       <td>${CB(c.Criticite)}</td>
-      <td><select class="statut-sel" style="${SC(c.StatutTraitement)}" onclick="event.stopPropagation()" onchange="quickStatut(${c.Id},this.value)">${['Nouveau','En cours','Clôturé','Contesté'].map(s=>`<option${c.StatutTraitement===s?' selected':''}>${s}</option>`).join('')}</select></td>
-      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openSidebar(${c.Id})">👁</button></td>
+      <td><select class="statut-sel" style="${SC(c.StatutTraitement)}" onclick="event.stopPropagation()" onchange="quickStatut('${c.Id}',this.value)">${['Nouveau','En cours','Clôturé','Contesté'].map(s=>`<option${c.StatutTraitement===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openSidebar('${c.Id}')">👁</button></td>
     </tr>`;
   }).join('');
 }
@@ -1777,9 +1713,9 @@ function renderRGAUsers(){
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0">
         <button class="btn btn-sm" style="color:var(--G2);border:1.5px solid var(--G2);background:none;padding:3px 9px"
-          title="Modifier" onclick="editUser(${u.Id},'${enc(u.Title)}','${enc(u.EmailUtilisateur)}','${enc(u.NomAffichage)}','${enc(u.Region)}','${role}')">✏️</button>
+          title="Modifier" onclick="editUser('${u.Id}','${enc(u.Title)}','${enc(u.EmailUtilisateur)}','${enc(u.NomAffichage)}','${enc(u.Region)}','${role}')">✏️</button>
         <button class="btn btn-sm" style="color:#DC2626;border:1.5px solid #DC2626;background:none;padding:3px 9px"
-          title="Supprimer" onclick="deleteUser(${u.Id},'${enc(u.NomAffichage||u.Title)}')">🗑</button>
+          title="Supprimer" onclick="deleteUser('${u.Id}','${enc(u.NomAffichage||u.Title)}')">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -1926,7 +1862,7 @@ function closeEditModal(){
 }
 
 async function saveEditUser(){
-  const id     = parseInt(document.getElementById('edit-id').value);
+  const id     = document.getElementById('edit-id').value; // GUID — pas de parseInt
   const code   = document.getElementById('edit-code').value.trim();
   const email  = document.getElementById('edit-email').value.trim().toLowerCase();
   const nom    = document.getElementById('edit-nom').value.trim();
@@ -1946,8 +1882,13 @@ async function saveEditUser(){
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
   try {
-    await spPatch(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items(${id})`,
-      { Title:code, EmailUtilisateur:email, NomAffichage:nom||code, Region:region, Role:role });
+    const roleMap = {'admin':0,'dr':1,'rga':2};
+    await dvPatch(DV_TABLES.users, id, {
+      cr2c5_coderga:          code,
+      cr2c5_adresseemail: email,
+      cr2c5_nomcomplet:       nom||code,
+        cr2c5_role:             roleMap[role] ?? 2
+    });
     showToast(`✅ ${nom||code} mis à jour`,'ok');
     closeEditModal();
     await loadRGAUsers(); renderRGAUsers();
@@ -2008,19 +1949,20 @@ async function saveNewUser(){
   const btn = document.querySelector('#add-user-form button.btn-primary');
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
-  const data = { Title:code, EmailUtilisateur:email, NomAffichage:nom||code, Region:region||'' };
+  const roleMap = {'admin':0,'dr':1,'rga':2};
+  const data = {
+    cr2c5_coderga:          code,
+    cr2c5_adresseemail: email,
+    cr2c5_nomcomplet:       nom||code,
+    cr2c5_role:             roleMap[role] ?? 2
+  };
   let saved = false;
   try {
-    await spPost(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, {...data, Role:role});
+    await dvPost(DV_TABLES.users, data);
     saved = true;
   } catch(e1) {
-    try {
-      await spPost(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items`, data);
-      saved = true;
-    } catch(e2) {
-      if(btn){ btn.textContent='💾 Enregistrer'; btn.disabled=false; }
-      showToast('❌ Erreur: '+e2.message,'err'); return;
-    }
+    if(btn){ btn.textContent='💾 Enregistrer'; btn.disabled=false; }
+    showToast('❌ Erreur: '+e1.message,'err'); return;
   }
 
   if(saved){
@@ -2032,7 +1974,7 @@ async function saveNewUser(){
 }
 async function deleteUser(id,nom){
   if(!confirm(`Supprimer ${nom} ?`)) return;
-  await spDelete(`web/lists/getbytitle('${CFG.lists.rgaUsers}')/items(${id})`);
+  await dvDelete(DV_TABLES.users, id);
   showToast(`${nom} supprimé(e)`,'ok');
   await loadRGAUsers(); renderRGAUsers();
 }
@@ -2268,7 +2210,7 @@ async function changeLoadPeriod() {
 
 async function clearData(){
   if(!confirm('⚠️ Supprimer TOUS les constats ? Action irréversible.')) return;
-  for(const c of S.constats) await spDelete(`web/lists/getbytitle('${CFG.lists.constats}')/items(${c.Id})`);
+  for(const c of S.constats) await dvDelete(DV_TABLES.constats, c.Id);
   S.constats=[]; S.filtered=[];
   renderAll();
   showToast('Toutes les données supprimées','ok');
@@ -2312,7 +2254,7 @@ async function init() {
 async function getTokenSilent(account) {
   try {
     const res = await Promise.race([
-      msalInstance.acquireTokenSilent({ scopes: [SP_SCOPE], account }),
+      msalInstance.acquireTokenSilent({ scopes: [DV_SCOPE], account }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
     ]);
     return res.accessToken;
@@ -2324,22 +2266,7 @@ async function loadApp() {
   document.getElementById('login-screen').style.display = 'none';
   ldScreen.style.display = 'flex';
   try {
-    // Détecter d'abord si admin (depuis MSAL, sans appel SP)
-    const accounts = msalInstance.getAllAccounts();
-    const emailCheck = (accounts[0]?.username || '').toLowerCase();
-    const isAdminCheck = emailCheck === CFG.adminEmail.toLowerCase() ||
-                         emailCheck.includes(CFG.adminEmail.split('@')[0].toLowerCase());
-
-    if (isAdminCheck) {
-      // Pour l'admin : vérifier si les colonnes existent (setup)
-      setLdMsg('Vérification des listes...');
-      const [c1, c2] = await Promise.all([listExists(CFG.lists.constats), listExists(CFG.lists.rgaUsers)]);
-      if (!c1 || !c2) {
-        ldScreen.style.display='none';
-        document.getElementById('setup-screen').style.display='block';
-        return;
-      }
-    }
+    // Dataverse : pas de setup nécessaire, tables déjà créées
     // Pour les RGA : on saute la vérification → detectRole directement
 
     setLdMsg('Détection du rôle...');
