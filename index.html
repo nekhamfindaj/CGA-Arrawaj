@@ -986,7 +986,7 @@ async function detectRole() {
       // Mapping champs Dataverse → structure app
       const userMapped = {
         Id:               user.cr2c5_cgausersid,
-        Title:            String(user.cr2c5_rga || ''),
+        Title:            String(user.cr2c5_coderga || ''),
         EmailUtilisateur: String(user.cr2c5_adresseemail || ''),
         NomAffichage:     String(user.cr2c5_nomcomplet || ''),
         Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
@@ -1013,7 +1013,7 @@ async function loadConstats(periodeJours = null) {
   let filters = [];
 
   if (S.role === 'rga' && S.userRGA) {
-    filters.push(`cr2c5_rga eq '${S.userRGA.Title}'`);
+    filters.push(`cr2c5_coderga eq '${S.userRGA.Title}'`);
   }
   if (S.role === 'dr' && S.userDR) {
     const drRegion = (S.userDR.Region && S.userDR.Region.toLowerCase() !== 'tout' && S.userDR.Region.trim() !== '')
@@ -1130,7 +1130,7 @@ async function loadRGAUsers() {
   };
   S.rgaUsers = (d.value || []).map(u => ({
     Id:               u.cr2c5_cgausersid,
-    Title:            String(u.cr2c5_rga || ''),
+    Title:            String(u.cr2c5_coderga || ''),
     EmailUtilisateur: String(u.cr2c5_adresseemail || ''),
     NomAffichage:     String(u.cr2c5_nomcomplet || ''),
     Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
@@ -1884,7 +1884,7 @@ async function saveEditUser(){
   try {
     const roleMap = {'admin':0,'dr':1,'rga':2};
     await dvPatch(DV_TABLES.users, id, {
-      cr2c5_rga:          code,
+      cr2c5_coderga:          code,
       cr2c5_adresseemail: email,
       cr2c5_nomcomplet:       nom||code,
         cr2c5_role:             roleMap[role] ?? 2
@@ -1951,7 +1951,7 @@ async function saveNewUser(){
 
   const roleMap = {'admin':0,'dr':1,'rga':2};
   const data = {
-    cr2c5_rga:          code,
+    cr2c5_coderga:          code,
     cr2c5_adresseemail: email,
     cr2c5_nomcomplet:       nom||code,
     cr2c5_role:             roleMap[role] ?? 2
