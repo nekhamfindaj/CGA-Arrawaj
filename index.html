@@ -1130,6 +1130,7 @@ async function loadRGAUsers() {
 //  IMPORT
 // ══════════════════════════════════
 const xlDate = v => typeof v === 'number' ? new Date((v-25569)*86400000).toLocaleDateString('fr-FR') : String(v||'');
+const xlDateISO = v => { if(!v) return null; if(typeof v === 'number') { const d = new Date((v-25569)*86400000); return d.toISOString().split('T')[0]; } const s = String(v); const p = s.split('/'); if(p.length===3) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'); return null; };
 const normCrit = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')) return 'Élevé'; if(s.includes('moy')) return 'Moyen'; if(s.includes('bas')) return 'Bas'; return 'Non défini'; };
 // Criticité en valeur numérique Dataverse : 100000000=Majeure, 100000001=Mineure, 100000002=Observation
 const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('maj')||s.includes('lev')||s.includes('ele')) return 0; if(s.includes('min')||s.includes('moy')) return 1; if(s.includes('obs')||s.includes('bas')) return 2; return 1; };
@@ -1206,8 +1207,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
           const batch = dataRows.slice(i, i+bsz);
           await Promise.all(batch.map(r => dvPost(DV_TABLES.constats, {
             cr2c5_referenceduconstat:          String(r[1]||'').substring(0,100),
-            cr2c5_dateduconstat:       xlDate(r[0]) || null,
-            cr2c5_region:              String(r[2]||'').substring(0,100),
+            cr2c5_dateduconstat:       xlDateISO(r[0]),
             cr2c5_coderga:                 String(r[3]||'').substring(0,100),
             cr2c5_agence:              String(r[4]||'').substring(0,200),
             cr2c5_acteursimpliques:             String(r[5]||'').substring(0,200),
