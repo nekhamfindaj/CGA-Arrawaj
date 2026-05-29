@@ -1221,24 +1221,22 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         const bsz = 4;
         for (let i=0;i<dataRows.length;i+=bsz) {
           const batch = dataRows.slice(i, i+bsz);
-          const toStr = (v, max) => { const s = String(v===null||v===undefined||v!==v?'':v).trim(); return s==='nan'?'':s.substring(0,max); };
+          const toStr = (v, max) => { if(v===null||v===undefined||v!==v) return null; const s = String(v).trim(); return (s===''||s==='nan') ? null : s.substring(0,max); };
           await Promise.all(batch.map(r => {
-            const body = {
-              cr2c5_referenceduconstat:       toStr(r[1],100),
-              cr2c5_coderga:                  toStr(r[3],100),
-              cr2c5_agence:                   toStr(r[4],200),
-              cr2c5_acteursimpliques:         toStr(r[5],200),
-              cr2c5_nometprenom:              toStr(r[6],200),
-              cr2c5_descriptionduconstat:     toStr(r[7],5000),
-              cr2c5_familleduconstat:         toStr(r[8],200),
-              cr2c5_detaildelanomalie:        toStr(r[9],5000),
-              cr2c5_identifiantclient:        toStr(r[10],100),
-              cr2c5_referencedelaprocedure:   toStr(r[11],200),
-              cr2c5_criticite:                normCritDV(r[12]),
-              cr2c5_piecejointe:              toStr(r[13],500),
-              cr2c5_recommandationcga:        toStr(r[14],5000),
-              cr2c5_statut:                   0,
-            };
+            const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 0 };
+            const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
+            add('cr2c5_referenceduconstat',    toStr(r[1],100));
+            add('cr2c5_coderga',               toStr(r[3],100));
+            add('cr2c5_agence',                toStr(r[4],200));
+            add('cr2c5_acteursimpliques',      toStr(r[5],200));
+            add('cr2c5_nometprenom',           toStr(r[6],200));
+            add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
+            add('cr2c5_familleduconstat',      toStr(r[8],200));
+            add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
+            add('cr2c5_identifiantclient',     toStr(r[10],100));
+            add('cr2c5_referencedelaprocedure',toStr(r[11],200));
+            add('cr2c5_piecejointe',           toStr(r[13],500));
+            add('cr2c5_recommandationcga',     toStr(r[14],5000));
             const d = xlDateISO(r[0]);
             if(d) body.cr2c5_dateduconstat = d;
             return dvPost(DV_TABLES.constats, body);
