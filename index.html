@@ -980,14 +980,14 @@ async function detectRole() {
   try {
     // Recherche dans Dataverse CGA_Users par email
     const d = await dvGet(DV_TABLES.users,
-      `cr2c5_emailutilisateur eq '${email}'`);
+      `cr2c5_adresseemail eq '${email}'`);
     if (d.value?.length > 0) {
       const user = d.value[0];
       // Mapping champs Dataverse → structure app
       const userMapped = {
         Id:               user.cr2c5_cgausersid,
         Title:            String(user.cr2c5_coderga || ''),
-        EmailUtilisateur: String(user.cr2c5_emailutilisateur || ''),
+        EmailUtilisateur: String(user.cr2c5_adresseemail || ''),
         NomAffichage:     String(user.cr2c5_nomcomplet || ''),
         Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
         Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
@@ -1117,7 +1117,7 @@ async function loadRGAUsers() {
   S.rgaUsers = (d.value || []).map(u => ({
     Id:               u.cr2c5_cgausersid,
     Title:            String(u.cr2c5_coderga || ''),
-    EmailUtilisateur: String(u.cr2c5_emailutilisateur || ''),
+    EmailUtilisateur: String(u.cr2c5_adresseemail || ''),
     NomAffichage:     String(u.cr2c5_nomcomplet || ''),
     Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
     Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
@@ -1861,10 +1861,9 @@ async function saveEditUser(){
     const roleMap = {'admin':100000000,'dr':100000001,'rga':100000002};
     await dvPatch(DV_TABLES.users, id, {
       cr2c5_coderga:          code,
-      cr2c5_emailutilisateur: email,
+      cr2c5_adresseemail: email,
       cr2c5_nomcomplet:       nom||code,
-      cr2c5_region:           REGION_TO_DV[region] ?? null,
-      cr2c5_role:             roleMap[role] ?? 100000002
+        cr2c5_role:             roleMap[role] ?? 100000002
     });
     showToast(`✅ ${nom||code} mis à jour`,'ok');
     closeEditModal();
@@ -1929,9 +1928,8 @@ async function saveNewUser(){
   const roleMap = {'admin':100000000,'dr':100000001,'rga':100000002};
   const data = {
     cr2c5_coderga:          code,
-    cr2c5_emailutilisateur: email,
+    cr2c5_adresseemail: email,
     cr2c5_nomcomplet:       nom||code,
-    cr2c5_region:           REGION_TO_DV[region] ?? null,
     cr2c5_role:             roleMap[role] ?? 100000002
   };
   let saved = false;
