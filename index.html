@@ -1785,7 +1785,8 @@ async function importUsersExcel(input) {
         } catch(e) { err++; console.warn('Import user error:', email, e.message); }
       }
 
-      showToast(\`✅ \${ok} utilisateurs importés\${skip > 0 ? ' · ' + skip + ' ignorés' : ''}\${err > 0 ? ' · ' + err + ' erreurs' : ''}\`, ok > 0 ? 'ok' : 'err');
+      const msg = '✅ ' + ok + ' utilisateurs importés' + (skip > 0 ? ' · ' + skip + ' ignorés' : '') + (err > 0 ? ' · ' + err + ' erreurs' : '');
+      showToast(msg, ok > 0 ? 'ok' : 'err');
       await loadRGAUsers();
       renderRGAUsers();
     } catch(e) {
