@@ -738,7 +738,7 @@ const GRAPH_SCOPE = 'https://graph.microsoft.com/User.ReadBasic.All';
 
 // Tables Dataverse (préfixe cr2c5_)
 const DV_TABLES = {
-  constats: 'cr2c5_cgaconstatses',
+  constats: 'cr2c5_constats',
   users:    'cr2c5_cgauserses',
   suivi:    'cr2c5_cgasuivis'
 };
@@ -986,7 +986,7 @@ async function detectRole() {
       // Mapping champs Dataverse → structure app
       const userMapped = {
         Id:               user.cr2c5_cgausersid,
-        Title:            String(user.cr2c5_coderga || ''),
+        Title:            String(user.cr2c5_rga || ''),
         EmailUtilisateur: String(user.cr2c5_adresseemail || ''),
         NomAffichage:     String(user.cr2c5_nomcomplet || ''),
         Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
@@ -1013,7 +1013,7 @@ async function loadConstats(periodeJours = null) {
   let filters = [];
 
   if (S.role === 'rga' && S.userRGA) {
-    filters.push(`cr2c5_coderga eq '${S.userRGA.Title}'`);
+    filters.push(`cr2c5_rga eq '${S.userRGA.Title}'`);
   }
   if (S.role === 'dr' && S.userDR) {
     const drRegion = (S.userDR.Region && S.userDR.Region.toLowerCase() !== 'tout' && S.userDR.Region.trim() !== '')
@@ -1049,7 +1049,7 @@ async function loadConstats(periodeJours = null) {
 
   // Mapping champs Dataverse → structure app existante
   S.constats = items.map(c => {
-    const dateConstat  = c.cr2c5_dateduconstat ? new Date(c.cr2c5_dateduconstat).toLocaleDateString('fr-FR') : '';
+    const dateConstat  = c.cr2c5_datedeconstat ? new Date(c.cr2c5_datedeconstat).toLocaleDateString('fr-FR') : '';
     const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
     // Mapping valeurs numériques Dataverse → labels affichage
@@ -1064,26 +1064,26 @@ async function loadConstats(periodeJours = null) {
       Title:                 c.cr2c5_referenceduconstat || '',
       DateConstat:           dateConstat,
       Region:                c.cr2c5_region || '',
-      CodeRGA:               c.cr2c5_coderga || '',
+      CodeRGA:               c.cr2c5_rga || '',
       Agence:                c.cr2c5_agence || '',
       Acteurs:               c.cr2c5_acteursimpliques || '',
-      NomPrenom:             c.cr2c5_nometprenom || '',
+      NomPrenom:             c.cr2c5_nomsetprenoms || '',
       LibelleConstat:        c.cr2c5_descriptionduconstat || '',
-      FamilleConstat:        '',
+      FamilleConstat:        c.cr2c5_familledeconstat || '',
       DetailAnomalie:        c.cr2c5_detaildelanomalie || '',
-      CINClient:             c.cr2c5_identifiantclient || '',
+      CINClient:             c.cr2c5_identiantsclients || '',
       RefProcedure:          c.cr2c5_referencedelaprocedure || '',
       Criticite:             criticiteVal,
       PieceJointeCGA:        c.cr2c5_piecejointe || '',
       RecommandationCGA:     c.cr2c5_recommandationcga || '',
       StatutTraitement:      statutVal,
-      ActionsMesures:        c.cr2c5_actionsmesures || '',
+      ActionsMesures:        c.cr2c5_actionsoumesures || '',
       EntitesConcernes:      c.cr2c5_acteursimpliquesentitesconcernes || '',
-      ConfirmationConstat:   c.cr2c5_confirmationconstat || '',
+      ConfirmationConstat:   c.cr2c5_confirmationduconstat || '',
       ActionAgregee:         c.cr2c5_actionagregee || '',
-      ArgumentsCommentaires: c.cr2c5_argumentcommentaires || '',
+      ArgumentsCommentaires: c.cr2c5_argumentsoucommentaires || '',
       PiecesJustificatives:  c.cr2c5_piecesjustificatives || '',
-      ActionsDelais:         c.cr2c5_actionsdelais || '',
+      ActionsDelais:         c.cr2c5_actionspreconiseesvecdelais || '',
       ModifiePar:            c.cr2c5_modifiepar || '',
       FichierSource:         c.cr2c5_fichiersource || '',
       RetoursDR:             c.cr2c5_retoursdr || '',
@@ -1116,7 +1116,7 @@ async function loadRGAUsers() {
   };
   S.rgaUsers = (d.value || []).map(u => ({
     Id:               u.cr2c5_cgausersid,
-    Title:            String(u.cr2c5_coderga || ''),
+    Title:            String(u.cr2c5_rga || ''),
     EmailUtilisateur: String(u.cr2c5_adresseemail || ''),
     NomAffichage:     String(u.cr2c5_nomcomplet || ''),
     Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
@@ -1226,18 +1226,19 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 0 };
             const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
             add('cr2c5_referenceduconstat',    toStr(r[1],100));
-            add('cr2c5_coderga',               toStr(r[3],100));
+            add('cr2c5_rga',               toStr(r[3],100));
             add('cr2c5_agence',                toStr(r[4],200));
             add('cr2c5_acteursimpliques',      toStr(r[5],200));
-            add('cr2c5_nometprenom',           toStr(r[6],200));
+            add('cr2c5_acteursouentitesconcernes', toStr(r[16],500));
+            add('cr2c5_nomsetprenoms',           toStr(r[6],200));
             add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
             add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
-            add('cr2c5_identifiantclient',     toStr(r[10],100));
+            add('cr2c5_identiantsclients',     toStr(r[10],100));
             add('cr2c5_referencedelaprocedure',toStr(r[11],200));
             add('cr2c5_piecejointe',           toStr(r[13],500));
             add('cr2c5_recommandationcga',     toStr(r[14],5000));
             const d = xlDateISO(r[0]);
-            if(d) body.cr2c5_dateduconstat = d;
+            if(d) body.cr2c5_datedeconstat = d;
             return dvPost(DV_TABLES.constats, body);
           }));
           done += batch.length;
@@ -1869,7 +1870,7 @@ async function saveEditUser(){
   try {
     const roleMap = {'admin':0,'dr':1,'rga':2};
     await dvPatch(DV_TABLES.users, id, {
-      cr2c5_coderga:          code,
+      cr2c5_rga:          code,
       cr2c5_adresseemail: email,
       cr2c5_nomcomplet:       nom||code,
         cr2c5_role:             roleMap[role] ?? 2
@@ -1936,7 +1937,7 @@ async function saveNewUser(){
 
   const roleMap = {'admin':0,'dr':1,'rga':2};
   const data = {
-    cr2c5_coderga:          code,
+    cr2c5_rga:          code,
     cr2c5_adresseemail: email,
     cr2c5_nomcomplet:       nom||code,
     cr2c5_role:             roleMap[role] ?? 2
