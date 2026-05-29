@@ -992,7 +992,7 @@ async function detectRole() {
         Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
         Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                             ? user['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
-                            : (user.cr2c5_role === 100000000 ? 'admin' : user.cr2c5_role === 100000001 ? 'dr' : 'rga')
+                            : (user.cr2c5_role === 0 ? 'admin' : user.cr2c5_role === 1 ? 'dr' : 'rga')
       };
       const role = (userMapped.Role || 'rga').toLowerCase();
       if (role === 'admin')     { S.role = 'admin'; S.userRGA = userMapped; }
@@ -1109,9 +1109,9 @@ async function loadRGAUsers() {
     const formatted = val?.['cr2c5_role@OData.Community.Display.V1.FormattedValue'];
     if (formatted) return formatted.toLowerCase();
     const num = val?.cr2c5_role;
-    if (num === 100000000) return 'admin';
-    if (num === 100000001) return 'dr';
-    if (num === 100000002) return 'rga';
+    if (num === 0) return 'admin';
+    if (num === 1) return 'dr';
+    if (num === 2) return 'rga';
     return 'rga';
   };
   S.rgaUsers = (d.value || []).map(u => ({
@@ -1122,7 +1122,7 @@ async function loadRGAUsers() {
     Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
     Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                         ? u['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
-                        : (u.cr2c5_role === 100000000 ? 'admin' : u.cr2c5_role === 100000001 ? 'dr' : 'rga')
+                        : (u.cr2c5_role === 0 ? 'admin' : u.cr2c5_role === 1 ? 'dr' : 'rga')
   }));
 }
 
@@ -1858,12 +1858,12 @@ async function saveEditUser(){
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
   try {
-    const roleMap = {'admin':100000000,'dr':100000001,'rga':100000002};
+    const roleMap = {'admin':0,'dr':1,'rga':2};
     await dvPatch(DV_TABLES.users, id, {
       cr2c5_coderga:          code,
       cr2c5_adresseemail: email,
       cr2c5_nomcomplet:       nom||code,
-        cr2c5_role:             roleMap[role] ?? 100000002
+        cr2c5_role:             roleMap[role] ?? 2
     });
     showToast(`✅ ${nom||code} mis à jour`,'ok');
     closeEditModal();
@@ -1925,12 +1925,12 @@ async function saveNewUser(){
   const btn = document.querySelector('#add-user-form button.btn-primary');
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
-  const roleMap = {'admin':100000000,'dr':100000001,'rga':100000002};
+  const roleMap = {'admin':0,'dr':1,'rga':2};
   const data = {
     cr2c5_coderga:          code,
     cr2c5_adresseemail: email,
     cr2c5_nomcomplet:       nom||code,
-    cr2c5_role:             roleMap[role] ?? 100000002
+    cr2c5_role:             roleMap[role] ?? 2
   };
   let saved = false;
   try {
