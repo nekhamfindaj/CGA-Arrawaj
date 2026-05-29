@@ -534,7 +534,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         <div class="card">
           <div class="card-hd">
             <span class="card-title">👥 Mapping RGA → Utilisateurs <span id="users-count" style="font-size:10px;font-weight:400;color:var(--sub)"></span></span>
-            <button class="btn btn-primary btn-sm" onclick="showAddUser()">+ Ajouter</button>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-users-file').click()" title="Importer depuis Excel">📥 Import Excel</button>
+              <input type="file" id="import-users-file" accept=".xlsx,.xls" style="display:none" onchange="importUsersExcel(this)">
+              <button class="btn btn-primary btn-sm" onclick="showAddUser()">+ Ajouter</button>
+            </div>
           </div>
           <div style="margin-bottom:10px">
             <div class="srch-wrap" style="width:100%">
@@ -1721,6 +1725,76 @@ function renderRGAUsers(){
     </div>`;
   }).join('');
 }
+// ══════════════════════════════════
+//  IMPORT UTILISATEURS EXCEL
+// ══════════════════════════════════
+async function importUsersExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  showToast('⏳ Import en cours...', '');
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // Détecter ligne d'en-tête (chercher "email" ou "role")
+      let hi = 0;
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const r = rows[i].map(c => String(c).toLowerCase());
+        if (r.some(c => c.includes('email') || c.includes('role') || c.includes('rôle'))) { hi = i; break; }
+      }
+
+      // Détecter les colonnes par en-tête
+      const headers = rows[hi].map(c => String(c).toLowerCase().trim());
+      const col = (kw) => headers.findIndex(h => h.includes(kw));
+      const iCode   = col('code') >= 0 ? col('code') : col('rga') >= 0 ? col('rga') : 0;
+      const iEmail  = col('email') >= 0 ? col('email') : col('mail') >= 0 ? col('mail') : 1;
+      const iNom    = col('nom') >= 0 ? col('nom') : col('name') >= 0 ? col('name') : 2;
+      const iRole   = col('role') >= 0 ? col('role') : col('rôle') >= 0 ? col('rôle') : 3;
+      const iRegion = col('region') >= 0 ? col('region') : col('région') >= 0 ? col('région') : 4;
+
+      const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c !== ''));
+      const roleMap = { 'admin': 0, 'dr': 1, 'rga': 2, 'administrateur': 0, 'directeur': 1, 'controleur': 2, 'contrôleur': 2 };
+
+      let ok = 0, skip = 0, err = 0;
+      for (const r of dataRows) {
+        const code  = String(r[iCode]  || '').trim();
+        const email = String(r[iEmail] || '').trim().toLowerCase();
+        const nom   = String(r[iNom]   || '').trim();
+        const roleRaw = String(r[iRole] || 'rga').trim().toLowerCase();
+        const role  = roleMap[roleRaw] ?? 2;
+
+        if (!email || !email.includes('@')) { skip++; continue; }
+
+        // Vérifier doublon
+        if (S.rgaUsers.some(u => (u.EmailUtilisateur || '').toLowerCase() === email)) { skip++; continue; }
+
+        try {
+          await dvPost(DV_TABLES.users, {
+            cr2c5_coderga:      code || email.split('@')[0],
+            cr2c5_adresseemail: email,
+            cr2c5_nomcomplet:   nom || code || email.split('@')[0],
+            cr2c5_role:         role
+          });
+          ok++;
+        } catch(e) { err++; console.warn('Import user error:', email, e.message); }
+      }
+
+      showToast(\`✅ \${ok} utilisateurs importés\${skip > 0 ? ' · ' + skip + ' ignorés' : ''}\${err > 0 ? ' · ' + err + ' erreurs' : ''}\`, ok > 0 ? 'ok' : 'err');
+      await loadRGAUsers();
+      renderRGAUsers();
+    } catch(e) {
+      showToast('❌ Erreur lecture fichier: ' + e.message, 'err');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
 function showAddUser(){
   document.getElementById('add-user-form').style.display='block';
   document.getElementById('add-user-form').scrollIntoView({behavior:'smooth',block:'nearest'});
