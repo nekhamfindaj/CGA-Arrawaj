@@ -976,11 +976,13 @@ async function detectRole() {
       // Mapping champs Dataverse → structure app
       const userMapped = {
         Id:               user.cr2c5_cgausersid,
-        Title:            user.cr2c5_coderga || '',
-        EmailUtilisateur: user.cr2c5_emailutilisateur || '',
-        NomAffichage:     user.cr2c5_nomcomplet || '',
-        Region:           user.cr2c5_region || '',
-        Role:             user.cr2c5_role_label || user['cr2c5_role@OData.Community.Display.V1.FormattedValue'] || 'rga'
+        Title:            String(user.cr2c5_coderga || ''),
+        EmailUtilisateur: String(user.cr2c5_emailutilisateur || ''),
+        NomAffichage:     String(user.cr2c5_nomcomplet || ''),
+        Region:           String(user.cr2c5_region || ''),
+        Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
+                            ? user['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
+                            : (user.cr2c5_role === 100000000 ? 'admin' : user.cr2c5_role === 100000001 ? 'dr' : 'rga')
       };
       const role = (userMapped.Role || 'rga').toLowerCase();
       if (role === 'admin')     { S.role = 'admin'; S.userRGA = userMapped; }
@@ -1040,9 +1042,13 @@ async function loadConstats(periodeJours = null) {
     const dateConstat  = c.cr2c5_datedeconstat ? new Date(c.cr2c5_datedeconstat).toLocaleDateString('fr-FR') : '';
     const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
-    // Valeur du choix Criticité
-    const criticiteVal = c['cr2c5_criticite@OData.Community.Display.V1.FormattedValue'] || 'Non défini';
-    const statutVal    = c['cr2c5_statut@OData.Community.Display.V1.FormattedValue'] || 'Nouveau';
+    // Mapping valeurs numériques Dataverse → labels affichage
+    const criticiteMap = {100000000:'Majeure', 100000001:'Mineure', 100000002:'Observation'};
+    const statutMap    = {100000000:'Nouveau', 100000001:'En cours', 100000002:'Clôturé', 100000003:'Contesté'};
+    const criticiteVal = criticiteMap[c.cr2c5_criticite] ||
+                         c['cr2c5_criticite@OData.Community.Display.V1.FormattedValue'] || 'Non défini';
+    const statutVal    = statutMap[c.cr2c5_statut] ||
+                         c['cr2c5_statut@OData.Community.Display.V1.FormattedValue'] || 'Nouveau';
     return {
       Id:                    c.cr2c5_cgaconstatsid,
       Title:                 c.cr2c5_refconstat || '',
@@ -1088,13 +1094,25 @@ async function loadConstats(periodeJours = null) {
 
 async function loadRGAUsers() {
   const d = await dvGet(DV_TABLES.users);
+  const roleLabel = (val) => {
+    // Dataverse retourne parfois la valeur numérique, parfois le label formaté
+    const formatted = val?.['cr2c5_role@OData.Community.Display.V1.FormattedValue'];
+    if (formatted) return formatted.toLowerCase();
+    const num = val?.cr2c5_role;
+    if (num === 100000000) return 'admin';
+    if (num === 100000001) return 'dr';
+    if (num === 100000002) return 'rga';
+    return 'rga';
+  };
   S.rgaUsers = (d.value || []).map(u => ({
     Id:               u.cr2c5_cgausersid,
-    Title:            u.cr2c5_coderga || '',
-    EmailUtilisateur: u.cr2c5_emailutilisateur || '',
-    NomAffichage:     u.cr2c5_nomcomplet || '',
-    Region:           u.cr2c5_region || '',
-    Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue'] || 'rga'
+    Title:            String(u.cr2c5_coderga || ''),
+    EmailUtilisateur: String(u.cr2c5_emailutilisateur || ''),
+    NomAffichage:     String(u.cr2c5_nomcomplet || ''),
+    Region:           String(u.cr2c5_region || ''),
+    Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
+                        ? u['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
+                        : (u.cr2c5_role === 100000000 ? 'admin' : u.cr2c5_role === 100000001 ? 'dr' : 'rga')
   }));
 }
 
