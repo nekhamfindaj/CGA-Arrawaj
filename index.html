@@ -1071,7 +1071,7 @@ async function loadConstats(periodeJours = null) {
       LibelleConstat:        c.cr2c5_descriptionduconstat || '',
       FamilleConstat:        c.cr2c5_familledeconstat || '',
       DetailAnomalie:        c.cr2c5_detaildelanomalie || '',
-      CINClient:             c.cr2c5_identiantsclients || '',
+      CINClient:             c.cr2c5_identifiantsclients || '',
       RefProcedure:          c.cr2c5_referencedelaprocedure || '',
       Criticite:             criticiteVal,
       PieceJointeCGA:        c.cr2c5_piecejointe || '',
@@ -1233,7 +1233,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             add('cr2c5_nomsetprenoms',           toStr(r[6],200));
             add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
             add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
-            add('cr2c5_identiantsclients',     toStr(r[10],100));
+            add('cr2c5_identifiantsclients',     toStr(r[10],100));
             add('cr2c5_referencedelaprocedure',toStr(r[11],200));
             add('cr2c5_piecejointe',           toStr(r[13],500));
             add('cr2c5_recommandationcga',     toStr(r[14],5000));
