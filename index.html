@@ -1221,7 +1221,6 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             cr2c5_piecejointe:         String(r[13]||'').substring(0,500),
             cr2c5_recommandationcga:   String(r[14]||'').substring(0,5000),
             cr2c5_statut: 0, // Ouvert
-            cr2c5_fichiersource:       file.name.substring(0,200)
           })));
           done += batch.length;
           const progress = baseProgress + Math.round((done/total)*fileShare);
@@ -1249,16 +1248,8 @@ async function updateConstat(id, patch) {
     }
     if (patch.ConfirmationConstat !== undefined) {
       const confMap = {'Confirmé':0,'Non confirmé':1,'En attente':2,'Infirmé':1,'':null};
-      dvPatchData.cr2c5_confirmationconstat = confMap[patch.ConfirmationConstat] ?? null;
     }
-    if (patch.ActionsMesures     !== undefined) dvPatchData.cr2c5_actionsmesures         = patch.ActionsMesures;
     if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursimpliquesentitesconcernes = patch.EntitesConcernes;
-    if (patch.ActionsDelais      !== undefined) dvPatchData.cr2c5_actionsdelais           = patch.ActionsDelais;
-    if (patch.ActionAgregee      !== undefined) dvPatchData.cr2c5_actionagregee           = patch.ActionAgregee;
-    if (patch.PiecesJustificatives!== undefined) dvPatchData.cr2c5_piecesjustificatives   = patch.PiecesJustificatives;
-    if (patch.ArgumentsCommentaires !== undefined) dvPatchData.cr2c5_argumentcommentaires = patch.ArgumentsCommentaires;
-    if (patch.RetoursDR          !== undefined) dvPatchData.cr2c5_retoursdr               = patch.RetoursDR;
-    dvPatchData.cr2c5_modifiepar = S.email;
 
     await dvPatch(DV_TABLES.constats, id, dvPatchData);
     const idx = S.constats.findIndex(c=>c.Id===id);
