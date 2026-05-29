@@ -1069,7 +1069,7 @@ async function loadConstats(periodeJours = null) {
       Acteurs:               c.cr2c5_acteursimpliques || '',
       NomPrenom:             c.cr2c5_nometprenom || '',
       LibelleConstat:        c.cr2c5_descriptionduconstat || '',
-      FamilleConstat:        c.cr2c5_familleduconstat || '',
+      FamilleConstat:        '',
       DetailAnomalie:        c.cr2c5_detaildelanomalie || '',
       CINClient:             c.cr2c5_identifiantclient || '',
       RefProcedure:          c.cr2c5_referencedelaprocedure || '',
@@ -1231,7 +1231,6 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             add('cr2c5_acteursimpliques',      toStr(r[5],200));
             add('cr2c5_nometprenom',           toStr(r[6],200));
             add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
-            add('cr2c5_familleduconstat',      toStr(r[8],200));
             add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
             add('cr2c5_identifiantclient',     toStr(r[10],100));
             add('cr2c5_referencedelaprocedure',toStr(r[11],200));
