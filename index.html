@@ -1052,13 +1052,27 @@ async function loadConstats(periodeJours = null) {
     const dateConstat  = c.cr2c5_datedeconstat ? new Date(c.cr2c5_datedeconstat).toLocaleDateString('fr-FR') : '';
     const dateModif    = c.modifiedon ? new Date(c.modifiedon).toLocaleDateString('fr-FR') : '';
     const dateEffective = dateConstat || dateModif;
-    // Mapping valeurs numériques Dataverse → labels affichage
-    const criticiteMap = {0:'Majeure', 1:'Mineure', 2:'Observation'};
-    const statutMap    = {0:'Nouveau', 1:'En cours', 2:'Clôturé', 3:'Contesté'};
-    const criticiteVal = criticiteMap[c.cr2c5_criticite] ||
-                         c['cr2c5_criticite@OData.Community.Display.V1.FormattedValue'] || 'Non défini';
-    const statutVal    = statutMap[c.cr2c5_statut] ||
-                         c['cr2c5_statut@OData.Community.Display.V1.FormattedValue'] || 'Nouveau';
+    // Criticité et Statut sont du texte libre dans cr2c5_constats
+    const criticiteRaw = String(c.cr2c5_criticite || '');
+    const statutRaw    = String(c.cr2c5_statut    || 'Nouveau');
+    // Normaliser criticité pour l'affichage
+    const normCritDisplay = (s) => {
+      const sl = s.toLowerCase();
+      if(sl.includes('lev')||sl.includes('ele')||sl.includes('maj')) return 'Élevé';
+      if(sl.includes('moy')||sl.includes('min')) return 'Moyen';
+      if(sl.includes('bas')||sl.includes('obs')||sl.includes('fai')) return 'Bas';
+      return s || 'Non défini';
+    };
+    const normStatutDisplay = (s) => {
+      const sl = s.toLowerCase();
+      if(sl.includes('cours')) return 'En cours';
+      if(sl.includes('clôt')||sl.includes('clot')) return 'Clôturé';
+      if(sl.includes('contest')) return 'Contesté';
+      if(sl.includes('nouv')) return 'Nouveau';
+      return s || 'Nouveau';
+    };
+    const criticiteVal = normCritDisplay(criticiteRaw);
+    const statutVal    = normStatutDisplay(statutRaw);
     return {
       Id:                    c.cr2c5_constatid,
       Title:                 c.cr2c5_referenceduconstat || '',
@@ -1149,7 +1163,7 @@ const xlDateISO = v => {
 };
 const normCrit = v => { const s = String(v||'').toLowerCase(); if(s.includes('lev')||s.includes('éle')||s.includes('ele')) return 'Élevé'; if(s.includes('moy')) return 'Moyen'; if(s.includes('bas')) return 'Bas'; return 'Non défini'; };
 // Criticité en valeur numérique Dataverse : 100000000=Majeure, 100000001=Mineure, 100000002=Observation
-const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('maj')||s.includes('lev')||s.includes('ele')) return 0; if(s.includes('min')||s.includes('moy')) return 1; if(s.includes('obs')||s.includes('bas')) return 2; return 1; };
+const normCritDV = v => { const s = String(v||'').toLowerCase(); if(s.includes('maj')||s.includes('lev')||s.includes('ele')) return '1. Elevé'; if(s.includes('min')||s.includes('moy')) return '2. Moyenne'; if(s.includes('obs')||s.includes('bas')) return '3. Faible'; return String(v||'').trim()||'2. Moyenne'; };
 
 async function importCanevas(input) {
   const files = Array.from(input.files);
@@ -1223,7 +1237,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
           const batch = dataRows.slice(i, i+bsz);
           const toStr = (v, max) => { if(v===null||v===undefined||v!==v) return null; const s = String(v).trim(); return (s===''||s==='nan') ? null : s.substring(0,max); };
           await Promise.all(batch.map(r => {
-            const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 0 };
+            const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 'Nouveau' };
             const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
             add('cr2c5_referenceduconstat',    toStr(r[1],100));
             add('cr2c5_rga',               toStr(r[3],100));
@@ -1262,8 +1276,7 @@ async function updateConstat(id, patch) {
     // Mapper les champs app → champs Dataverse
     const dvPatchData = {};
     if (patch.StatutTraitement !== undefined) {
-      const statutMap = {'Nouveau':0,'En cours':1,'Clôturé':2,'Contesté':3};
-      dvPatchData.cr2c5_statut = statutMap[patch.StatutTraitement] ?? 0;
+      dvPatchData.cr2c5_statut = patch.StatutTraitement;
     }
     if (patch.ConfirmationConstat !== undefined) {
       const confMap = {'Confirmé':0,'Non confirmé':1,'En attente':2,'Infirmé':1,'':null};
