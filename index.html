@@ -1242,7 +1242,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             const d = xlDateISO(r[0]);
             if(d) body.cr2c5_dateduconstat = d;
             return dvPost(DV_TABLES.constats, body);
-          })));
+          }));
           done += batch.length;
           const progress = baseProgress + Math.round((done/total)*fileShare);
           fill.style.width = progress + '%';
