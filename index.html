@@ -743,6 +743,16 @@ const DV_TABLES = {
   suivi:    'cr2c5_cgasuivis'
 };
 
+// ── Mapping Région Dataverse (Choix numérique) ──
+const REGION_TO_DV = {
+  'R01':934900000,'R02':934900001,'R03':934900002,'R04':934900003,
+  'R05':934900004,'R06':934900005,'R07':934900006,'R08':934900007,
+  'R09':934900008,'R10':934900009,'R11':934900010,'R12':934900011,
+  'R13':934900012,'R14':934900013,'R15':934900014
+};
+const DV_TO_REGION = {};
+Object.entries(REGION_TO_DV).forEach(([k,v])=>{ DV_TO_REGION[v]=k; });
+
 // Token Graph séparé du token SharePoint
 async function getGraphToken() {
   const accounts = msalInstance.getAllAccounts();
@@ -979,7 +989,7 @@ async function detectRole() {
         Title:            String(user.cr2c5_coderga || ''),
         EmailUtilisateur: String(user.cr2c5_emailutilisateur || ''),
         NomAffichage:     String(user.cr2c5_nomcomplet || ''),
-        Region:           String(user.cr2c5_region || ''),
+        Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
         Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                             ? user['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
                             : (user.cr2c5_role === 100000000 ? 'admin' : user.cr2c5_role === 100000001 ? 'dr' : 'rga')
@@ -1109,7 +1119,7 @@ async function loadRGAUsers() {
     Title:            String(u.cr2c5_coderga || ''),
     EmailUtilisateur: String(u.cr2c5_emailutilisateur || ''),
     NomAffichage:     String(u.cr2c5_nomcomplet || ''),
-    Region:           String(u.cr2c5_region || ''),
+    Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
     Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                         ? u['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
                         : (u.cr2c5_role === 100000000 ? 'admin' : u.cr2c5_role === 100000001 ? 'dr' : 'rga')
@@ -1828,7 +1838,7 @@ function closeEditModal(){
 }
 
 async function saveEditUser(){
-  const id     = parseInt(document.getElementById('edit-id').value);
+  const id     = document.getElementById('edit-id').value; // GUID — pas de parseInt
   const code   = document.getElementById('edit-code').value.trim();
   const email  = document.getElementById('edit-email').value.trim().toLowerCase();
   const nom    = document.getElementById('edit-nom').value.trim();
@@ -1853,7 +1863,7 @@ async function saveEditUser(){
       cr2c5_coderga:          code,
       cr2c5_emailutilisateur: email,
       cr2c5_nomcomplet:       nom||code,
-      cr2c5_region:           region,
+      cr2c5_region:           REGION_TO_DV[region] ?? null,
       cr2c5_role:             roleMap[role] ?? 100000002
     });
     showToast(`✅ ${nom||code} mis à jour`,'ok');
@@ -1921,7 +1931,7 @@ async function saveNewUser(){
     cr2c5_coderga:          code,
     cr2c5_emailutilisateur: email,
     cr2c5_nomcomplet:       nom||code,
-    cr2c5_region:           region||'',
+    cr2c5_region:           REGION_TO_DV[region] ?? null,
     cr2c5_role:             roleMap[role] ?? 100000002
   };
   let saved = false;
