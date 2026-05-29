@@ -1393,7 +1393,7 @@ function renderTable() {
   body.innerHTML = S.filtered.map(c => {
     const sel = S.selConstat?.Id===c.Id ? 'selected' : '';
     const txt = (c.LibelleConstat||'').substring(0,80);
-    return `<tr class="${sel}" onclick="openSidebar(${c.Id})">
+    return `<tr class="${sel}" onclick="openSidebar('${c.Id}')">
       <td style="white-space:nowrap">${c.DateEffective||'—'}<br><span style='font-size:9px;color:var(--sub)'>${c.DateSource==='chargement'?'📥 chargement':''}</span></td>
       <td class="col-hide-mobile" style="font-weight:500;color:var(--G);white-space:nowrap">${c.Title||'—'}</td>
       <td class="col-hide-mobile" style="white-space:nowrap">${c.Region||'—'}</td>
@@ -1402,8 +1402,8 @@ function renderTable() {
       <td class="col-hide-mobile td-clip">${c.FamilleConstat||'—'}</td>
       <td class="td-clip" style="max-width:180px">${txt}${txt.length===80?'...':''}</td>
       <td>${CB(c.Criticite)}</td>
-      <td><select class="statut-sel" style="${SC(c.StatutTraitement)}" onclick="event.stopPropagation()" onchange="quickStatut(${c.Id},this.value)">${['Nouveau','En cours','Clôturé','Contesté'].map(s=>`<option${c.StatutTraitement===s?' selected':''}>${s}</option>`).join('')}</select></td>
-      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openSidebar(${c.Id})">👁</button></td>
+      <td><select class="statut-sel" style="${SC(c.StatutTraitement)}" onclick="event.stopPropagation()" onchange="quickStatut('${c.Id}',this.value)">${['Nouveau','En cours','Clôturé','Contesté'].map(s=>`<option${c.StatutTraitement===s?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openSidebar('${c.Id}')">👁</button></td>
     </tr>`;
   }).join('');
 }
@@ -1679,9 +1679,9 @@ function renderRGAUsers(){
       </div>
       <div style="display:flex;gap:5px;flex-shrink:0">
         <button class="btn btn-sm" style="color:var(--G2);border:1.5px solid var(--G2);background:none;padding:3px 9px"
-          title="Modifier" onclick="editUser(${u.Id},'${enc(u.Title)}','${enc(u.EmailUtilisateur)}','${enc(u.NomAffichage)}','${enc(u.Region)}','${role}')">✏️</button>
+          title="Modifier" onclick="editUser('${u.Id}','${enc(u.Title)}','${enc(u.EmailUtilisateur)}','${enc(u.NomAffichage)}','${enc(u.Region)}','${role}')">✏️</button>
         <button class="btn btn-sm" style="color:#DC2626;border:1.5px solid #DC2626;background:none;padding:3px 9px"
-          title="Supprimer" onclick="deleteUser(${u.Id},'${enc(u.NomAffichage||u.Title)}')">🗑</button>
+          title="Supprimer" onclick="deleteUser('${u.Id}','${enc(u.NomAffichage||u.Title)}')">🗑</button>
       </div>
     </div>`;
   }).join('');
