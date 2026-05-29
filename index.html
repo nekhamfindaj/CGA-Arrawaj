@@ -1240,6 +1240,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 'Nouveau' };
             const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
             add('cr2c5_referenceduconstat',    toStr(r[1],100));
+            add('cr2c5_region',                toStr(r[2],100));
             add('cr2c5_rga',               toStr(r[3],100));
             add('cr2c5_agence',                toStr(r[4],200));
             add('cr2c5_acteursimpliques',      toStr(r[5],200));
