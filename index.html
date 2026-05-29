@@ -635,7 +635,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
           <div style="font-size:12px;line-height:2;color:#374151">
             <div>📍 Environnement : <strong>Dataverse HIC...</strong></div>
             <div>👑 Admin : <strong>hicham.nekhla@fondation-arrawaj.ma</strong></div>
-            <div>📋 Table constats : <strong>cr2c5_cgaconstatses</strong></div>
+            <div>📋 Table constats : <strong>cr2c5_constats</strong></div>
             <div>👥 Table users : <strong>cr2c5_cgauserses</strong></div>
             <div id="inf-total" style="margin-top:6px;color:#6B7280"></div>
           </div>
@@ -1078,7 +1078,7 @@ async function loadConstats(periodeJours = null) {
       RecommandationCGA:     c.cr2c5_recommandationcga || '',
       StatutTraitement:      statutVal,
       ActionsMesures:        c.cr2c5_actionsoumesures || '',
-      EntitesConcernes:      c.cr2c5_acteursimpliquesentitesconcernes || '',
+      EntitesConcernes:      c.cr2c5_acteursouentitesconcernes || '',
       ConfirmationConstat:   c.cr2c5_confirmationduconstat || '',
       ActionAgregee:         c.cr2c5_actionagregee || '',
       ArgumentsCommentaires: c.cr2c5_argumentsoucommentaires || '',
@@ -1268,7 +1268,7 @@ async function updateConstat(id, patch) {
     if (patch.ConfirmationConstat !== undefined) {
       const confMap = {'Confirmé':0,'Non confirmé':1,'En attente':2,'Infirmé':1,'':null};
     }
-    if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursimpliquesentitesconcernes = patch.EntitesConcernes;
+    if (patch.EntitesConcernes   !== undefined) dvPatchData.cr2c5_acteursouentitesconcernes = patch.EntitesConcernes;
 
     await dvPatch(DV_TABLES.constats, id, dvPatchData);
     const idx = S.constats.findIndex(c=>c.Id===id);
