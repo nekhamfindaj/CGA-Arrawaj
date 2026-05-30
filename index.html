@@ -1260,7 +1260,8 @@ async function importCanevas(input) {
         (existData.value || []).forEach(c => {
           const d = c.cr2c5_datedeconstat ? c.cr2c5_datedeconstat.split('T')[0] : '';
           const a = (c.cr2c5_agence || '').trim().toLowerCase();
-          if (d && a) existingKeys.add(d + '|' + a);
+          const r = (c.cr2c5_rga || '').trim().toLowerCase();
+          if (d && a && r) existingKeys.add(r + '|' + d + '|' + a);
         });
         dedupUrl = existData['@odata.nextLink'] || null;
       } else { dedupUrl = null; }
