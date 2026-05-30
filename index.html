@@ -1280,18 +1280,44 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
 
         txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${total} constats détectés`;
 
-        // ── Détection automatique du format par analyse des en-têtes ──
-        const hdRow = rows[hi].map(c => String(c||'').toLowerCase().trim()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,''));
-        const hasRefConstat = hdRow.some(h => (h.includes('ref') || h.includes('ref')) && h.includes('constat'));
-        const hasTypeAnomalie = hdRow.some(h => h.includes('type') && h.includes('anomalie'));
-        const nbCols = rows[hi].filter(c => c !== '' && c !== null && c !== undefined).length;
-        console.log('Format détecté - hi:'+hi+' nbCols:'+nbCols+' hasRef:'+hasRefConstat+' hasType:'+hasTypeAnomalie+' hdRow:'+JSON.stringify(hdRow.slice(0,5)));
+        // ── Détection des colonnes par nom (abstraction de l'ordre) ──
+        const norm = s => String(s||'').toLowerCase().trim()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+        const hdRow = rows[hi].map(c => norm(c));
 
-        // Format B : ancien format sans Réf Constat (Type d'anomalie en col 6)
-        const isFmtB = !hasRefConstat && hasTypeAnomalie;
-        // Format C : format intermédiaire ≤15 cols (avec Réf Constat, sans management)
-        const isFmtC = hasRefConstat && nbCols <= 15 && !hasTypeAnomalie;
+        // Mapping nom colonne → index réel dans le fichier
+        const colIdx = {};
+        const colMap = [
+          ['date',        ['datedeconstat','dateconstat','date']],
+          ['ref',         ['refconstat','refduconstat','reference']],
+          ['region',      ['region']],
+          ['rga',         ['rga']],
+          ['agence',      ['agence']],
+          ['acteurs',     ['acteurs']],
+          ['nomprenom',   ['nomet','nomacteur','nometprenom','nomprenom']],
+          ['constat',     ['constat','typedanomalie','typeanomalie']],
+          ['famille',     ['familledeconstat','familleconstat']],
+          ['detail',      ['detaildelanomalie','detailanomalie','detail']],
+          ['cin',         ['ldoucinclient','cinlient','ldoucin','cin']],
+          ['refproc',     ['referenceprocedure','refprocedure','referencedelaprocedure']],
+          ['criticite',   ['criticite']],
+          ['piecejointe', ['piecejointe','pj']],
+          ['reco',        ['recommandationcga','recommandation']],
+          ['actions',     ['actionsmesures','actions']],
+          ['entites',     ['acteursentitesconcernes','acteursouentites','entites']],
+          ['statut',      ['statut']],
+          ['retoursdr',   ['retoursdr','retours']],
+          ['confirmation',['confirmationconstat','confirmation']],
+          ['actionagr',   ['actionagregee','actionagr']],
+          ['arguments',   ['argumentsoucommentaires','arguments','commentaires']],
+          ['piecesjust',  ['piecesjustificatives']],
+          ['actionsdelais',['actionspreconiseesavecdelais','actionsdelais']],
+        ];
+        colMap.forEach(([key, variants]) => {
+          const idx = hdRow.findIndex(h => variants.some(v => h.includes(v)));
+          if (idx >= 0) colIdx[key] = idx;
+        });
+        console.log('Colonnes détectées:', JSON.stringify(colIdx));
 
         let done = 0;
         const bsz = 4;
@@ -1303,56 +1329,30 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
             body = { cr2c5_statut: 'Nouveau' };
             add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
 
-            if (isFmtB) {
-              // Format B : date,region,rga,agence,acteurs,nomacteur,type_anomalie,detail,cin,refproc,criticite,pj,reco,actions,acteursentites,statut
-              body.cr2c5_criticite = normCritDV(r[10]);
-              add('cr2c5_region',               toStr(r[1],100));
-              add('cr2c5_rga',                  toStr(r[2],100));
-              add('cr2c5_agence',               toStr(r[3],200));
-              add('cr2c5_acteursimpliques',     toStr(r[4],200));
-              add('cr2c5_nomsetprenoms',        toStr(r[5],200));
-              add('cr2c5_descriptionduconstat', toStr(r[6],5000));
-              add('cr2c5_detaildelanomalie',    toStr(r[7],5000));
-              add('cr2c5_identifiantsclients',  toStr(r[8],100));
-              add('cr2c5_referencedelaprocedure',toStr(r[9],500));
-              add('cr2c5_piecejointe',          toStr(r[11],500));
-              add('cr2c5_recommandationcga',    toStr(r[12],5000));
-              add('cr2c5_actionsoumesures',     toStr(r[13],5000));
-              add('cr2c5_acteursouentitesconcernes',toStr(r[14],500));
-            } else if (isFmtC) {
-              // Format C : comme standard mais sans colonnes management (15 cols)
-              body.cr2c5_criticite = normCritDV(r[12]);
-              add('cr2c5_referenceduconstat',   toStr(r[1],100));
-              add('cr2c5_region',               toStr(r[2],100));
-              add('cr2c5_rga',                  toStr(r[3],100));
-              add('cr2c5_agence',               toStr(r[4],200));
-              add('cr2c5_acteursimpliques',     toStr(r[5],200));
-              add('cr2c5_nomsetprenoms',        toStr(r[6],200));
-              add('cr2c5_descriptionduconstat', toStr(r[7],5000));
-              add('cr2c5_familledeconstat',     toStr(r[8],200));
-              add('cr2c5_detaildelanomalie',    toStr(r[9],5000));
-              add('cr2c5_identifiantsclients',  toStr(r[10],100));
-              add('cr2c5_referencedelaprocedure',toStr(r[11],500));
-              add('cr2c5_piecejointe',          toStr(r[13],500));
-              add('cr2c5_recommandationcga',    toStr(r[14],5000));
-            } else {
-              // Format A : standard 24 cols
-              body.cr2c5_criticite = normCritDV(r[12]);
-              add('cr2c5_referenceduconstat',   toStr(r[1],100));
-              add('cr2c5_region',               toStr(r[2],100));
-              add('cr2c5_rga',                  toStr(r[3],100));
-              add('cr2c5_agence',               toStr(r[4],200));
-              add('cr2c5_acteursimpliques',     toStr(r[5],200));
-              add('cr2c5_nomsetprenoms',        toStr(r[6],200));
-              add('cr2c5_descriptionduconstat', toStr(r[7],5000));
-              add('cr2c5_familledeconstat',     toStr(r[8],200));
-              add('cr2c5_detaildelanomalie',    toStr(r[9],5000));
-              add('cr2c5_identifiantsclients',  toStr(r[10],100));
-              add('cr2c5_referencedelaprocedure',toStr(r[11],500));
-              add('cr2c5_piecejointe',          toStr(r[13],500));
-              add('cr2c5_recommandationcga',    toStr(r[14],5000));
-              add('cr2c5_acteursouentitesconcernes',toStr(r[16],500));
-            }
+            // Mapping universel par nom de colonne détecté
+            const g = (key, max) => colIdx[key] !== undefined ? toStr(r[colIdx[key]], max) : null;
+            body.cr2c5_criticite = normCritDV(g('criticite', 50));
+            add('cr2c5_referenceduconstat',        g('ref',      100));
+            add('cr2c5_region',                    g('region',   100));
+            add('cr2c5_rga',                       g('rga',      100));
+            add('cr2c5_agence',                    g('agence',   200));
+            add('cr2c5_acteursimpliques',          g('acteurs',  200));
+            add('cr2c5_nomsetprenoms',             g('nomprenom',200));
+            add('cr2c5_descriptionduconstat',      g('constat',  5000));
+            add('cr2c5_familledeconstat',          g('famille',  200));
+            add('cr2c5_detaildelanomalie',         g('detail',   5000));
+            add('cr2c5_identifiantsclients',       g('cin',      100));
+            add('cr2c5_referencedelaprocedure',    g('refproc',  500));
+            add('cr2c5_piecejointe',               g('piecejointe',500));
+            add('cr2c5_recommandationcga',         g('reco',     5000));
+            add('cr2c5_actionsoumesures',          g('actions',  5000));
+            add('cr2c5_acteursouentitesconcernes', g('entites',  500));
+            add('cr2c5_retoursdr',                 g('retoursdr',5000));
+            add('cr2c5_confirmationduconstat',     g('confirmation',200));
+            add('cr2c5_actionagregee',             g('actionagr',200));
+            add('cr2c5_argumentsoucommentaires',   g('arguments',5000));
+            add('cr2c5_piecesjustificatives',      g('piecesjust',500));
+            add('cr2c5_actionspreconiseesavecdelais',g('actionsdelais',5000));
             const d = xlDateISO(r[0]);
             if(d) body.cr2c5_datedeconstat = d;
             return dvPost(DV_TABLES.constats, body);
