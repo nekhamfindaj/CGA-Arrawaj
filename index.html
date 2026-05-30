@@ -1281,15 +1281,17 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${total} constats détectés`;
 
         // ── Détection automatique du format par analyse des en-têtes ──
-        const hdRow = rows[hi].map(c => String(c||'').toLowerCase().trim());
-        const hasRefConstat = hdRow.some(h => h.includes('réf') && h.includes('constat'));
+        const hdRow = rows[hi].map(c => String(c||'').toLowerCase().trim()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+        const hasRefConstat = hdRow.some(h => (h.includes('ref') || h.includes('ref')) && h.includes('constat'));
         const hasTypeAnomalie = hdRow.some(h => h.includes('type') && h.includes('anomalie'));
-        const nbCols = hdRow.filter(h => h !== '').length;
+        const nbCols = rows[hi].filter(c => c !== '' && c !== null && c !== undefined).length;
+        console.log('Format détecté - hi:'+hi+' nbCols:'+nbCols+' hasRef:'+hasRefConstat+' hasType:'+hasTypeAnomalie+' hdRow:'+JSON.stringify(hdRow.slice(0,5)));
 
         // Format B : ancien format sans Réf Constat (Type d'anomalie en col 6)
         const isFmtB = !hasRefConstat && hasTypeAnomalie;
-        // Format C : format intermédiaire 15 cols (avec Réf Constat, sans management)
-        const isFmtC = hasRefConstat && nbCols <= 15;
+        // Format C : format intermédiaire ≤15 cols (avec Réf Constat, sans management)
+        const isFmtC = hasRefConstat && nbCols <= 15 && !hasTypeAnomalie;
 
         let done = 0;
         const bsz = 4;
