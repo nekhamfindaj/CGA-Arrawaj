@@ -1403,6 +1403,21 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill, existing
         });
         console.log('Colonnes détectées:', JSON.stringify(colIdx));
 
+        // ── Vérification rejet fichier entier ──
+        let fileAlreadyLoaded = false;
+        for (const r of dataRows.slice(0, 5)) {
+          const dTest = xlDateISO(colIdx['date'] !== undefined ? r[colIdx['date']] : r[0]);
+          const aTest = String(colIdx['agence'] !== undefined ? r[colIdx['agence']] : r[4] || '').trim().toLowerCase();
+          console.log('Test doublon:', dTest, '|', aTest, '| existe:', existingKeys.has(dTest + '|' + aTest));
+          if (dTest && aTest && existingKeys.has(dTest + '|' + aTest)) {
+            fileAlreadyLoaded = true; break;
+          }
+        }
+        if (fileAlreadyLoaded) {
+          resolve({ ok: 0, detected: total, failed: 0, skipped: total, format: Object.keys(colIdx).length + ' cols détectées', errors: ['Fichier déjà chargé'] });
+          return;
+        }
+
         // existingKeys passé depuis importCanevas — chargé une seule fois
         let done = 0;
         let failed = 0;
