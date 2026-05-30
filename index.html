@@ -466,6 +466,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         <div class="card"><div class="card-hd"><span class="card-title">Constats par région</span></div><div style="height:200px;position:relative"><canvas id="ch-reg"></canvas></div></div>
         <div class="card"><div class="card-hd"><span class="card-title">Top agences</span></div><div id="ch-agc-wrap" style="position:relative"><canvas id="ch-agc"></canvas></div></div>
       </div>
+      <!-- Matrice Famille × Région -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">🔥 Matrice Top Famille × Région</span><span style="font-size:10px;color:#9CA3AF">Top 6 familles × toutes régions</span></div>
+        <div id="matrix-fam-reg" style="overflow-x:auto;font-size:11px"></div>
+      </div>
+      <!-- Top Agence × Top Famille -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">📊 Top Agences par Famille de constat</span></div>
+        <div id="top-agc-fam" style="overflow-x:auto;font-size:11px"></div>
+      </div>
     </div>
 
     <!-- ── CONSTATS TABLE ── -->
@@ -1761,7 +1771,7 @@ function renderDashboard() {
     {lbl:'Agences',val:[...new Set(dc.map(c=>c.Agence).filter(Boolean))].length,color:'var(--O)',ico:'🏢'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card">
+    <div class="kpi-card" onclick="kpiClick('${k.lbl}')" title="Voir les constats correspondants">
       <div class="kpi-label">${k.ico} ${k.lbl}</div>
       <div class="kpi-value" style="color:${k.color}">${k.val}</div>
       ${k.sub?`<div class="kpi-sub">${k.sub}</div>`:''}
@@ -1790,10 +1800,12 @@ function renderCharts(dc){
     if (!d) return;
     let key;
     if (grpMode === 'semaine') {
-      const y = d.getFullYear();
-      const start = new Date(y, 0, 1);
-      const wk = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
-      key = `S${String(wk).padStart(2,'0')} ${y}`;
+      // Trouver le lundi de la semaine
+      const day = d.getDay() || 7;
+      const monday = new Date(d); monday.setDate(d.getDate() - day + 1);
+      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+      const fmt = dt => `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+      key = `${fmt(monday)}-${fmt(sunday)}`;
     } else if (grpMode === 'trimestre') {
       key = `T${Math.floor(d.getMonth()/3)+1} ${d.getFullYear()}`;
     } else {
@@ -1833,7 +1845,10 @@ function renderCharts(dc){
   dch('crit');
   const cd=['Élevé','Moyen','Bas'],cv=cd.map(x=>cntDc(c=>c.Criticite===x)),ccol=['#DC2626','#F59E0B','#10B981'];
   const cl=cd.filter((_,i)=>cv[i]>0),cvf=cv.filter(v=>v>0),ccf=ccol.filter((_,i)=>cv[i]>0);
-  if(document.getElementById('ch-crit')&&cl.length) S.charts['crit']=new Chart(document.getElementById('ch-crit'),{type:'doughnut',data:{labels:cl,datasets:[{data:cvf,backgroundColor:ccf,borderWidth:2,borderColor:'#fff'}]},options:{...CHART_DEF,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},padding:10}}}}});
+  if(document.getElementById('ch-crit')&&cl.length) S.charts['crit']=new Chart(document.getElementById('ch-crit'),{type:'doughnut',data:{
+    labels:cl.map((l,i)=>{const pct=Math.round(cvf[i]/cvf.reduce((a,b)=>a+b,0)*100);return l+' ('+cvf[i]+' · '+pct+'%)'}),
+    datasets:[{data:cvf,backgroundColor:ccf,borderWidth:2,borderColor:'#fff'}]
+  },options:{...CHART_DEF,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},padding:10}},tooltip:{callbacks:{label:function(ctx){const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=Math.round(ctx.parsed/total*100);return ctx.label.split(' (')[0]+': '+ctx.parsed+' ('+pct+'%)';}}}}}});
 
   // Statut bar
   dch('stat');
@@ -1856,6 +1871,141 @@ function renderCharts(dc){
   const ad=grp('Agence',8,dc);
   const aw=document.getElementById('ch-agc-wrap'); if(aw) aw.style.height=Math.max(ad.length*32+16,80)+'px';
   if(document.getElementById('ch-agc')&&ad.length) S.charts['agc']=new Chart(document.getElementById('ch-agc'),{type:'bar',data:{labels:ad.map(d=>d[0]),datasets:[{data:ad.map(d=>d[1]),backgroundColor:'#7C3AED',borderRadius:3}]},options:{...CHART_DEF,indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+
+  // Matrice Famille × Région
+  renderMatrix(dc);
+}
+
+function renderMatrix(dc) {
+  // Top 6 familles
+  const famData = grp('FamilleConstat', 6, dc);
+  const topFams = famData.map(d => d[0]);
+  // Toutes régions
+  const regions = [...new Set(dc.map(c => c.Region).filter(Boolean))].sort();
+  if (!topFams.length || !regions.length) return;
+
+  // Calcul matrice
+  const matrix = {};
+  topFams.forEach(f => { matrix[f] = {}; regions.forEach(r => { matrix[f][r] = 0; }); });
+  dc.forEach(c => { if (matrix[c.FamilleConstat] && c.Region) matrix[c.FamilleConstat][c.Region]++; });
+
+  // Max pour heatmap
+  const allVals = topFams.flatMap(f => regions.map(r => matrix[f][r]));
+  const maxVal = Math.max(...allVals, 1);
+
+  const heatColor = (v) => {
+    if (!v) return '#F9FAFB';
+    const intensity = v / maxVal;
+    if (intensity > 0.7) return '#DC2626';
+    if (intensity > 0.4) return '#F59E0B';
+    if (intensity > 0.15) return '#FCD34D';
+    return '#D1FAE5';
+  };
+
+  const el = document.getElementById('matrix-fam-reg');
+  if (!el) return;
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;min-width:500px">
+    <thead><tr>
+      <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd);white-space:nowrap">Famille</th>
+      ${regions.map(r=>`<th style="padding:5px 4px;text-align:center;font-size:9px;color:var(--sub);border-bottom:1.5px solid var(--bd);white-space:nowrap">${r}</th>`).join('')}
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Total</th>
+    </tr></thead>
+    <tbody>
+      ${topFams.map(f => {
+        const total = regions.reduce((s,r) => s + matrix[f][r], 0);
+        return `<tr onclick="filterConstats('famille','${f.replace(/'/g,"\'")}')" style="cursor:pointer" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+          <td style="padding:5px 8px;font-size:10px;font-weight:600;color:var(--G);border-bottom:1px solid var(--bd);white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis">${f}</td>
+          ${regions.map(r => {
+            const v = matrix[f][r];
+            return `<td onclick="event.stopPropagation();filterConstats2('famille','${f.replace(/'/g,"\'")}','region','${r}')" style="padding:5px 4px;text-align:center;font-size:10px;font-weight:${v?'700':'400'};color:${v?'#1F2937':'#D1D5DB'};background:${heatColor(v)};border-bottom:1px solid var(--bd);border-radius:3px;cursor:pointer">${v||'·'}</td>`;
+          }).join('')}
+          <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--G);border-bottom:1px solid var(--bd)">${total}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--sub);align-items:center">
+    <span>Légende :</span>
+    <span style="background:#DC2626;color:#fff;padding:2px 8px;border-radius:3px">Critique</span>
+    <span style="background:#F59E0B;color:#fff;padding:2px 8px;border-radius:3px">Élevé</span>
+    <span style="background:#FCD34D;padding:2px 8px;border-radius:3px">Modéré</span>
+    <span style="background:#D1FAE5;padding:2px 8px;border-radius:3px">Faible</span>
+    <span style="background:#F9FAFB;border:1px solid #E5E7EB;padding:2px 8px;border-radius:3px">Zéro</span>
+    <span style="margin-left:8px;font-style:italic">Cliquer sur une cellule pour filtrer</span>
+  </div>`;
+
+  // Top Agence × Famille
+  const agcData = grp('Agence', 8, dc);
+  const topAgcs = agcData.map(d => d[0]);
+  const famData2 = grp('FamilleConstat', 5, dc);
+  const topFams2 = famData2.map(d => d[0]);
+  const el2 = document.getElementById('top-agc-fam');
+  if (!el2 || !topAgcs.length) return;
+
+  el2.innerHTML = `<table style="width:100%;border-collapse:collapse;min-width:400px">
+    <thead><tr>
+      <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Agence</th>
+      ${topFams2.map(f=>`<th style="padding:5px 6px;text-align:center;font-size:9px;color:var(--sub);border-bottom:1.5px solid var(--bd);white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis" title="${f}">${f.substring(0,15)}${f.length>15?'…':''}</th>`).join('')}
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Total</th>
+    </tr></thead>
+    <tbody>
+      ${topAgcs.map(a => {
+        const agcConstats = dc.filter(c => c.Agence === a);
+        const total = agcConstats.length;
+        return `<tr onclick="filterConstats('agence','${a.replace(/'/g,"\'")}')" style="cursor:pointer" onmouseover="this.style.background='var(--GL)'" onmouseout="this.style.background=''">
+          <td style="padding:5px 8px;font-size:10px;font-weight:600;color:var(--G);border-bottom:1px solid var(--bd)">${a}</td>
+          ${topFams2.map(f => {
+            const v = agcConstats.filter(c => c.FamilleConstat === f).length;
+            return `<td style="padding:5px 6px;text-align:center;font-size:10px;font-weight:${v?'700':'400'};color:${v?'var(--G)':'#D1D5DB'};border-bottom:1px solid var(--bd)">${v||'·'}</td>`;
+          }).join('')}
+          <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--O);border-bottom:1px solid var(--bd)">${total}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function kpiClick(lbl) {
+  const filterMap = {
+    'Total constats':    () => { resetFilters(); },
+    'Criticité élevée':  () => { resetFilters(); document.getElementById('f-crit').value='Élevé'; applyFilters(); },
+    'Nouveaux':          () => { resetFilters(); document.getElementById('f-statut').value='Nouveau'; applyFilters(); },
+    'En cours':          () => { resetFilters(); document.getElementById('f-statut').value='En cours'; applyFilters(); },
+    'Clôturés':          () => { resetFilters(); document.getElementById('f-statut').value='Clôturé'; applyFilters(); },
+    'Contestés':         () => { resetFilters(); document.getElementById('f-statut').value='Contesté'; applyFilters(); },
+  };
+  if (filterMap[lbl]) {
+    filterMap[lbl]();
+    showTab('constats');
+  }
+}
+
+function resetFilters() {
+  ['f-q','f-region','f-rga','f-famille','f-crit','f-statut'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  applyFilters();
+}
+
+function filterConstats(field, value) {
+  resetFilters();
+  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga' };
+  const el = document.getElementById(fieldMap[field]);
+  if (el) el.value = value;
+  applyFilters();
+  showTab('constats');
+}
+
+function filterConstats2(f1, v1, f2, v2) {
+  resetFilters();
+  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga' };
+  const el1 = document.getElementById(fieldMap[f1]);
+  const el2 = document.getElementById(fieldMap[f2]);
+  if (el1) el1.value = v1;
+  if (el2) el2.value = v2;
+  applyFilters();
+  showTab('constats');
 }
 
 // ══════════════════════════════════
