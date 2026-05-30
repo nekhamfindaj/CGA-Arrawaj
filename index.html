@@ -1315,10 +1315,14 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
 
         // Détection automatique de la ligne d'en-tête
+        // Chercher la ligne qui contient le plus de mots-clés connus
+        const keywords = ['datedeconstat','refconstat','region','rga','agence','acteurs','constat','criticite','anomalie','recommandation'];
         let hi = 1;
+        let maxScore = 0;
         for (let i=0;i<Math.min(10,rows.length);i++) {
-          if (rows[i].some(c=>/datedeconstat|date.*constat/i.test(String(c)))) { hi=i; break; }
-          if (rows[i].some(c=>/^r[eé]gion$/i.test(String(c).trim()))) { hi=i; break; }
+          const rowNorm = rows[i].map(c => String(c||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''));
+          const score = keywords.filter(kw => rowNorm.some(h => h.includes(kw))).length;
+          if (score > maxScore) { maxScore = score; hi = i; }
         }
 
         const dataRows = rows.slice(hi+1).filter(r=>r.some(c=>c!==''&&c!=null));
