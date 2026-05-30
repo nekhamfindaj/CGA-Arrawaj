@@ -2035,7 +2035,7 @@ function resetFilters() {
 
 function filterConstats(field, value) {
   resetFilters();
-  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga' };
+  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga', 'statut': 'f-statut' };
   const el = document.getElementById(fieldMap[field]);
   if (el) el.value = value;
   applyFilters();
