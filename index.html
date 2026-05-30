@@ -749,10 +749,10 @@ const DV_TABLES = {
 
 // ── Mapping Région Dataverse (Choix numérique) ──
 const REGION_TO_DV = {
-  'R01':934900000,'R02':934900001,'R03':934900002,'R04':934900003,
-  'R05':934900004,'R06':934900005,'R07':934900006,'R08':934900007,
-  'R09':934900008,'R10':934900009,'R11':934900010,'R12':934900011,
-  'R13':934900012,'R14':934900013,'R15':934900014
+  'R01':0,'R02':1,'R03':934900001,'R04':934900002,
+  'R05':934900003,'R06':934900004,'R07':934900005,'R08':934900006,
+  'R09':934900007,'R10':934900008,'R11':934900009,'R12':934900010,
+  'R13':934900011,'R14':934900012,'R15':934900013
 };
 const DV_TO_REGION = {};
 Object.entries(REGION_TO_DV).forEach(([k,v])=>{ DV_TO_REGION[v]=k; });
@@ -996,7 +996,7 @@ async function detectRole() {
         Region:           DV_TO_REGION[user.cr2c5_region] || user['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(user.cr2c5_region || ''),
         Role:             user['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                             ? user['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
-                            : (user.cr2c5_role === 0 ? 'admin' : user.cr2c5_role === 1 ? 'dr' : 'rga')
+                            : (user.cr2c5_role === 1 ? 'admin' : user.cr2c5_role === 2 ? 'rga' : user.cr2c5_role === 3 ? 'dr' : 'rga')
       };
       const role = (userMapped.Role || 'rga').toLowerCase();
       if (role === 'admin')     { S.role = 'admin'; S.userRGA = userMapped; }
@@ -1140,7 +1140,7 @@ async function loadRGAUsers() {
     Region:           DV_TO_REGION[u.cr2c5_region] || u['cr2c5_region@OData.Community.Display.V1.FormattedValue'] || String(u.cr2c5_region || ''),
     Role:             u['cr2c5_role@OData.Community.Display.V1.FormattedValue']
                         ? u['cr2c5_role@OData.Community.Display.V1.FormattedValue'].toLowerCase()
-                        : (u.cr2c5_role === 0 ? 'admin' : u.cr2c5_role === 1 ? 'dr' : 'rga')
+                        : (u.cr2c5_role === 1 ? 'admin' : u.cr2c5_role === 2 ? 'rga' : u.cr2c5_role === 3 ? 'dr' : 'rga')
   }));
 }
 
@@ -1958,7 +1958,7 @@ async function saveEditUser(){
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
   try {
-    const roleMap = {'admin':0,'dr':1,'rga':2};
+    const roleMap = {'admin':1,'rga':2,'dr':3};
     const patchData = {
       cr2c5_coderga:      code,
       cr2c5_adresseemail: email,
@@ -2027,7 +2027,7 @@ async function saveNewUser(){
   const btn = document.querySelector('#add-user-form button.btn-primary');
   if(btn){ btn.textContent='⏳ Enregistrement...'; btn.disabled=true; }
 
-  const roleMap = {'admin':0,'dr':1,'rga':2};
+  const roleMap = {'admin':1,'rga':2,'dr':3};
   const data = {
     cr2c5_coderga:      code,
     cr2c5_adresseemail: email,
