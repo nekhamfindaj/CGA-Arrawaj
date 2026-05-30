@@ -1956,25 +1956,36 @@ function renderMatrix(dc) {
       if (s === 'En cours') return intensity > 0.5 ? '#1D4ED8' : intensity > 0.2 ? '#3B82F6' : '#DBEAFE';
       return intensity > 0.5 ? '#374151' : intensity > 0.2 ? '#6B7280' : '#F3F4F6';
     };
-    el3.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    // Statuts en lignes, Régions en colonnes
+    const statTotals = statuts.map(s => regions.reduce((sum,r) => sum + statMatrix[r][s], 0));
+    el3.innerHTML = `<table style="width:100%;border-collapse:collapse;min-width:500px">
       <thead><tr>
-        <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Région</th>
-        ${statuts.map(s=>`<th style="padding:5px 10px;text-align:center;font-size:10px;color:${statColors[s]};border-bottom:1.5px solid var(--bd);font-weight:700">${s}</th>`).join('')}
+        <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Statut</th>
+        ${regions.map(r=>`<th style="padding:5px 5px;text-align:center;font-size:9px;color:var(--sub);border-bottom:1.5px solid var(--bd);white-space:nowrap">${r}</th>`).join('')}
         <th style="padding:5px 8px;text-align:center;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Total</th>
       </tr></thead>
       <tbody>
-        ${regions.map(r => {
-          const total = statuts.reduce((s2,st) => s2 + statMatrix[r][st], 0);
-          return `<tr onclick="filterConstats('region','${r}')" style="cursor:pointer" onmouseover="this.style.background='var(--GL)'" onmouseout="this.style.background=''">
-            <td style="padding:5px 8px;font-size:10px;font-weight:600;color:var(--G);border-bottom:1px solid var(--bd)">${r}</td>
-            ${statuts.map(s => {
+        ${statuts.map((s,si) => {
+          const total = statTotals[si];
+          return `<tr onclick="filterConstats('statut','${s}')" style="cursor:pointer" onmouseover="this.style.background='var(--GL)'" onmouseout="this.style.background=''">
+            <td style="padding:5px 8px;font-size:10px;font-weight:700;color:${statColors[s]};border-bottom:1px solid var(--bd);white-space:nowrap">${s}</td>
+            ${regions.map(r => {
               const v = statMatrix[r][s];
-              const pct = total ? Math.round(v/total*100) : 0;
-              return `<td onclick="event.stopPropagation();filterConstats2('region','${r}','statut','${s}')" style="padding:5px 10px;text-align:center;font-size:10px;font-weight:${v?'700':'400'};background:${heatStat(v,s)};border-bottom:1px solid var(--bd);cursor:pointer" title="${v} (${pct}%)">${v||'·'}${v&&pct?'<div style=\'font-size:8px;font-weight:400;opacity:0.8\'>'+pct+'%</div>':''}</td>`;
+              const regTotal = statuts.reduce((sum,st) => sum + statMatrix[r][st], 0);
+              const pct = regTotal ? Math.round(v/regTotal*100) : 0;
+              return `<td onclick="event.stopPropagation();filterConstats2('region','${r}','statut','${s}')" style="padding:5px 5px;text-align:center;font-size:10px;font-weight:${v?'700':'400'};background:${heatStat(v,s)};border-bottom:1px solid var(--bd);cursor:pointer" title="${r} · ${v} (${pct}%)">${v||'·'}</td>`;
             }).join('')}
-            <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--G);border-bottom:1px solid var(--bd)">${total}</td>
+            <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:${statColors[s]};border-bottom:1px solid var(--bd)">${total}</td>
           </tr>`;
         }).join('')}
+        <tr style="background:var(--GL)">
+          <td style="padding:5px 8px;font-size:10px;font-weight:700;color:var(--G);border-top:1.5px solid var(--bd)">Total</td>
+          ${regions.map(r => {
+            const t = statuts.reduce((sum,st) => sum + statMatrix[r][st], 0);
+            return `<td style="padding:5px 5px;text-align:center;font-size:10px;font-weight:700;color:var(--G);border-top:1.5px solid var(--bd)">${t}</td>`;
+          }).join('')}
+          <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--G);border-top:1.5px solid var(--bd)">${dc.length}</td>
+        </tr>
       </tbody>
     </table>`;
   }
