@@ -401,6 +401,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
       <div id="imp-txt" style="font-size:12px;color:var(--G)">Import en cours...</div>
       <div class="imp-track"><div class="imp-fill" id="imp-fill" style="width:0%"></div></div>
     </div>
+    <!-- LOG IMPORT -->
+    <div id="imp-log" style="display:none;background:#fff;border:1.5px solid var(--bd);border-radius:10px;margin-bottom:12px;overflow:hidden">
+      <div style="background:linear-gradient(90deg,var(--GL),#F0FDF4);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)">
+        <span style="font-size:12px;font-weight:700;color:var(--G)">📋 Journal d'import</span>
+        <button onclick="document.getElementById('imp-log').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--sub)">✕</button>
+      </div>
+      <div id="imp-log-body" style="padding:10px 14px;max-height:250px;overflow-y:auto;font-size:11px"></div>
+      <div id="imp-log-total" style="padding:8px 14px;border-top:1px solid var(--bd);background:var(--GL);font-size:11px;font-weight:600;color:var(--G)"></div>
+    </div>
 
     <!-- ── DASHBOARD ── -->
     <div id="tab-dashboard">
@@ -1225,6 +1234,16 @@ async function importCanevas(input) {
 
   let totalImported = 0;
   let totalErrors   = 0;
+  let totalDetected = 0;
+  let totalFailed   = 0;
+  const logEntries  = [];
+
+  // Initialiser le log
+  const logEl   = document.getElementById('imp-log');
+  const logBody = document.getElementById('imp-log-body');
+  const logTotal= document.getElementById('imp-log-total');
+  if (logEl)   { logEl.style.display = 'block'; }
+  if (logBody) { logBody.innerHTML = ''; }
 
   // Traiter les fichiers séquentiellement
   for (let fi = 0; fi < files.length; fi++) {
@@ -1233,20 +1252,49 @@ async function importCanevas(input) {
     fill.style.width = Math.round((fi/files.length)*15) + '%';
 
     try {
-      const imported = await importSingleFile(file, fi, files.length, txt, fill);
-      totalImported += imported;
+      const result = await importSingleFile(file, fi, files.length, txt, fill);
+      totalImported += result.ok;
+      totalDetected += result.detected;
+      totalFailed   += result.failed;
+
+      // Ajouter entrée log
+      const statusColor = result.failed === 0 ? '#065F46' : result.ok === 0 ? '#991B1B' : '#92400E';
+      const statusIcon  = result.failed === 0 ? '✅' : result.ok === 0 ? '❌' : '⚠️';
+      const entry = `<div style="padding:7px 0;border-bottom:1px solid #F3F4F6;display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:13px;flex-shrink:0">${statusIcon}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--G);margin-bottom:3px">${file.name}</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <span style="color:#6B7280">📊 Détectées : <strong>${result.detected}</strong></span>
+            <span style="color:#065F46">✅ Chargées : <strong>${result.ok}</strong></span>
+            ${result.failed > 0 ? `<span style="color:#991B1B">❌ Non chargées : <strong>${result.failed}</strong></span>` : ''}
+            ${result.format ? `<span style="color:#6B7280">Format : <strong>${result.format}</strong></span>` : ''}
+          </div>
+          ${result.errors && result.errors.length > 0 ? `<div style="margin-top:4px;color:#991B1B;font-size:10px">${result.errors.slice(0,3).join('<br>')}</div>` : ''}
+        </div>
+      </div>`;
+      logEntries.push(entry);
+      if (logBody) logBody.innerHTML = logEntries.join('');
+
     } catch(err) {
       totalErrors++;
-      showToast(`❌ "${file.name}": ${err.message}`, 'err');
+      const entry = `<div style="padding:7px 0;border-bottom:1px solid #F3F4F6;display:flex;gap:10px">
+        <span style="font-size:13px">❌</span>
+        <div>
+          <div style="font-weight:600;color:#991B1B">${file.name}</div>
+          <div style="color:#991B1B;font-size:10px">${err.message}</div>
+        </div>
+      </div>`;
+      logEntries.push(entry);
+      if (logBody) logBody.innerHTML = logEntries.join('');
       console.error('Import error:', file.name, err);
     }
   }
 
   // Bilan final
   fill.style.width = '100%';
-  const bilan = files.length > 1
-    ? `✅ ${totalImported} constats importés depuis ${files.length} fichiers${totalErrors>0?' ('+totalErrors+' erreur(s))':''}`
-    : `✅ ${totalImported} constats importés`;
+  if (logTotal) logTotal.innerHTML = `📊 Total : <span style="color:var(--G)">${totalDetected} lignes détectées</span> · <span style="color:#065F46">${totalImported} chargées</span>${totalFailed > 0 ? ` · <span style="color:#991B1B">${totalFailed} non chargées</span>` : ''} · ${files.length} fichier(s)`;
+  const bilan = `✅ ${totalImported} constats importés${totalFailed > 0 ? ' · ' + totalFailed + ' erreurs' : ''}`;
   txt.textContent = bilan;
   showToast(bilan, 'ok');
 
@@ -1320,11 +1368,12 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
         console.log('Colonnes détectées:', JSON.stringify(colIdx));
 
         let done = 0;
+        let failed = 0;
         const bsz = 4;
         for (let i=0;i<dataRows.length;i+=bsz) {
           const batch = dataRows.slice(i, i+bsz);
           const toStr = (v, max) => { if(v===null||v===undefined||v!==v) return null; const s = String(v).trim(); return (s===''||s==='nan') ? null : s.substring(0,max); };
-          await Promise.all(batch.map(r => {
+          const batchResults = await Promise.all(batch.map(r => {
             let body, add;
             body = { cr2c5_statut: 'Nouveau' };
             add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
@@ -1362,7 +1411,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
           fill.style.width = progress + '%';
           txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${done}/${total}`;
         }
-        resolve(done);
+        resolve({ ok: done, detected: total, failed: failed, format: Object.keys(colIdx).length + ' cols détectées', errors: [] });
       } catch(err) { reject(err); }
     };
     reader.onerror = () => reject(new Error('Lecture impossible'));
