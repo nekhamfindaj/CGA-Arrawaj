@@ -1250,7 +1250,7 @@ async function importCanevas(input) {
   try {
     txt.textContent = '🔍 Vérification des doublons...';
     const dvToken = await getToken();
-    let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence,cr2c5_rga&$top=500`;
+    let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence&$top=500`;
     while (dedupUrl) {
       const existResp = await fetch(dedupUrl, {
         headers: { Authorization: 'Bearer ' + dvToken, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0', 'Prefer': 'odata.maxpagesize=500' }
@@ -1260,13 +1260,12 @@ async function importCanevas(input) {
         (existData.value || []).forEach(c => {
           const d = c.cr2c5_datedeconstat ? c.cr2c5_datedeconstat.split('T')[0] : '';
           const a = (c.cr2c5_agence || '').trim().toLowerCase();
-          const r = (c.cr2c5_rga || '').trim().toLowerCase();
-          if (d && a && r) existingKeys.add(r + '|' + d + '|' + a);
+          if (d && a) existingKeys.add(d + '|' + a);
         });
         dedupUrl = existData['@odata.nextLink'] || null;
       } else { dedupUrl = null; }
     }
-    console.log('✅ Clés existantes:', existingKeys.size, 'paires Date+Agence');
+    console.log('✅ Clés existantes:', existingKeys.size, 'paires Date+Agence chargées');
   } catch(e) { console.warn('Déduplication impossible:', e.message); }
 
   // Traiter les fichiers séquentiellement
