@@ -1001,6 +1001,13 @@ async function getUser() {
   return S.user;
 }
 
+function simulateRole(role, code, region) {
+  S.role = role;
+  const fakeUser = { Id: 'TEST', Title: code, EmailUtilisateur: S.email, NomAffichage: 'TEST '+role.toUpperCase(), Region: region, Role: role };
+  if (role === 'dr')  S.userDR  = fakeUser;
+  if (role === 'rga') S.userRGA = fakeUser;
+}
+
 async function detectRole() {
   const accounts = msalInstance.getAllAccounts();
   if (!accounts.length) { S.role = 'none'; return; }
@@ -1014,6 +1021,11 @@ async function detectRole() {
       email.includes(CFG.adminEmail.split('@')[0].toLowerCase())) {
     S.role = 'admin'; return;
   }
+
+  // ── MODE TEST — simuler DR ou RGA avec votre propre compte ──
+  // Décommenter la ligne souhaitée pour tester, recommenter après
+  // return simulateRole('dr',  'DR_R13', 'R13');   // ← Test DR R13
+  // return simulateRole('rga', 'RGA_TANGER SWANI', 'R13'); // ← Test RGA
   try {
     // Recherche dans Dataverse CGA_Users par email
     const d = await dvGet(DV_TABLES.users,
@@ -1256,7 +1268,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
 
         // Détection automatique de la ligne d'en-tête
         let hi = 1;
-        for (let i=0;i<Math.min(5,rows.length);i++) {
+        for (let i=0;i<Math.min(10,rows.length);i++) {
           if (rows[i].some(c=>/datedeconstat|date.*constat/i.test(String(c)))) { hi=i; break; }
           if (rows[i].some(c=>/^r[eé]gion$/i.test(String(c).trim()))) { hi=i; break; }
         }
@@ -1268,28 +1280,77 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
 
         txt.textContent = `📂 Fichier ${fileIndex+1}/${totalFiles} "${file.name}" — ${total} constats détectés`;
 
+        // ── Détection automatique du format par analyse des en-têtes ──
+        const hdRow = rows[hi].map(c => String(c||'').toLowerCase().trim());
+        const hasRefConstat = hdRow.some(h => h.includes('réf') && h.includes('constat'));
+        const hasTypeAnomalie = hdRow.some(h => h.includes('type') && h.includes('anomalie'));
+        const nbCols = hdRow.filter(h => h !== '').length;
+
+        // Format B : ancien format sans Réf Constat (Type d'anomalie en col 6)
+        const isFmtB = !hasRefConstat && hasTypeAnomalie;
+        // Format C : format intermédiaire 15 cols (avec Réf Constat, sans management)
+        const isFmtC = hasRefConstat && nbCols <= 15;
+
         let done = 0;
         const bsz = 4;
         for (let i=0;i<dataRows.length;i+=bsz) {
           const batch = dataRows.slice(i, i+bsz);
           const toStr = (v, max) => { if(v===null||v===undefined||v!==v) return null; const s = String(v).trim(); return (s===''||s==='nan') ? null : s.substring(0,max); };
           await Promise.all(batch.map(r => {
-            const body = { cr2c5_criticite: normCritDV(r[12]), cr2c5_statut: 'Nouveau' };
-            const add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
-            add('cr2c5_referenceduconstat',    toStr(r[1],100));
-            add('cr2c5_region',                toStr(r[2],100));
-            add('cr2c5_rga',               toStr(r[3],100));
-            add('cr2c5_agence',                toStr(r[4],200));
-            add('cr2c5_acteursimpliques',      toStr(r[5],200));
-            add('cr2c5_acteursouentitesconcernes', toStr(r[16],500));
-            add('cr2c5_nomsetprenoms',           toStr(r[6],200));
-            add('cr2c5_descriptionduconstat',  toStr(r[7],5000));
-            add('cr2c5_familledeconstat',      toStr(r[8],200));
-            add('cr2c5_detaildelanomalie',     toStr(r[9],5000));
-            add('cr2c5_identifiantsclients',     toStr(r[10],100));
-            add('cr2c5_referencedelaprocedure',toStr(r[11],200));
-            add('cr2c5_piecejointe',           toStr(r[13],500));
-            add('cr2c5_recommandationcga',     toStr(r[14],5000));
+            let body, add;
+            body = { cr2c5_statut: 'Nouveau' };
+            add = (k,v) => { if(v!==null&&v!==undefined&&v!=='') body[k]=v; };
+
+            if (isFmtB) {
+              // Format B : date,region,rga,agence,acteurs,nomacteur,type_anomalie,detail,cin,refproc,criticite,pj,reco,actions,acteursentites,statut
+              body.cr2c5_criticite = normCritDV(r[10]);
+              add('cr2c5_region',               toStr(r[1],100));
+              add('cr2c5_rga',                  toStr(r[2],100));
+              add('cr2c5_agence',               toStr(r[3],200));
+              add('cr2c5_acteursimpliques',     toStr(r[4],200));
+              add('cr2c5_nomsetprenoms',        toStr(r[5],200));
+              add('cr2c5_descriptionduconstat', toStr(r[6],5000));
+              add('cr2c5_detaildelanomalie',    toStr(r[7],5000));
+              add('cr2c5_identifiantsclients',  toStr(r[8],100));
+              add('cr2c5_referencedelaprocedure',toStr(r[9],500));
+              add('cr2c5_piecejointe',          toStr(r[11],500));
+              add('cr2c5_recommandationcga',    toStr(r[12],5000));
+              add('cr2c5_actionsoumesures',     toStr(r[13],5000));
+              add('cr2c5_acteursouentitesconcernes',toStr(r[14],500));
+            } else if (isFmtC) {
+              // Format C : comme standard mais sans colonnes management (15 cols)
+              body.cr2c5_criticite = normCritDV(r[12]);
+              add('cr2c5_referenceduconstat',   toStr(r[1],100));
+              add('cr2c5_region',               toStr(r[2],100));
+              add('cr2c5_rga',                  toStr(r[3],100));
+              add('cr2c5_agence',               toStr(r[4],200));
+              add('cr2c5_acteursimpliques',     toStr(r[5],200));
+              add('cr2c5_nomsetprenoms',        toStr(r[6],200));
+              add('cr2c5_descriptionduconstat', toStr(r[7],5000));
+              add('cr2c5_familledeconstat',     toStr(r[8],200));
+              add('cr2c5_detaildelanomalie',    toStr(r[9],5000));
+              add('cr2c5_identifiantsclients',  toStr(r[10],100));
+              add('cr2c5_referencedelaprocedure',toStr(r[11],500));
+              add('cr2c5_piecejointe',          toStr(r[13],500));
+              add('cr2c5_recommandationcga',    toStr(r[14],5000));
+            } else {
+              // Format A : standard 24 cols
+              body.cr2c5_criticite = normCritDV(r[12]);
+              add('cr2c5_referenceduconstat',   toStr(r[1],100));
+              add('cr2c5_region',               toStr(r[2],100));
+              add('cr2c5_rga',                  toStr(r[3],100));
+              add('cr2c5_agence',               toStr(r[4],200));
+              add('cr2c5_acteursimpliques',     toStr(r[5],200));
+              add('cr2c5_nomsetprenoms',        toStr(r[6],200));
+              add('cr2c5_descriptionduconstat', toStr(r[7],5000));
+              add('cr2c5_familledeconstat',     toStr(r[8],200));
+              add('cr2c5_detaildelanomalie',    toStr(r[9],5000));
+              add('cr2c5_identifiantsclients',  toStr(r[10],100));
+              add('cr2c5_referencedelaprocedure',toStr(r[11],500));
+              add('cr2c5_piecejointe',          toStr(r[13],500));
+              add('cr2c5_recommandationcga',    toStr(r[14],5000));
+              add('cr2c5_acteursouentitesconcernes',toStr(r[16],500));
+            }
             const d = xlDateISO(r[0]);
             if(d) body.cr2c5_datedeconstat = d;
             return dvPost(DV_TABLES.constats, body);
