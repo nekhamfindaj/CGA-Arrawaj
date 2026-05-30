@@ -1337,7 +1337,22 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill, existing
     reader.onload = async e => {
       try {
         const wb = XLSX.read(e.target.result, { type:'binary' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
+        // ── Trouver la feuille avec le meilleur score (données terrain) ──
+        const sheetKeywords = ['datedeconstat','dateconstat','refconstat','region','rga','agence','constat','criticite'];
+        const normH = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+        let bestSheet = wb.SheetNames[0];
+        let bestSheetScore = -1;
+        for (const shName of wb.SheetNames) {
+          const shRows = XLSX.utils.sheet_to_json(wb.Sheets[shName], {header:1, defval:''});
+          let shScore = 0;
+          for (let si = 0; si < Math.min(10, shRows.length); si++) {
+            const rn = shRows[si].map(c => normH(c));
+            shScore = Math.max(shScore, sheetKeywords.filter(kw => rn.some(h => h.includes(kw))).length);
+          }
+          if (shScore > bestSheetScore) { bestSheetScore = shScore; bestSheet = shName; }
+        }
+        console.log('Feuille sélectionnée:', bestSheet, '(score:', bestSheetScore + ')');
+        const ws = wb.Sheets[bestSheet];
         const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
 
         // Détection automatique de la ligne d'en-tête
