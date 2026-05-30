@@ -1343,7 +1343,7 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
           ['agence',      ['agence']],
           ['acteurs',     ['acteurs']],
           ['nomprenom',   ['nomet','nomacteur','nometprenom','nomprenom']],
-          ['constat',     ['constat','typedanomalie','typeanomalie']],
+          ['constat',     ['typedanomalie','typeanomalie']],
           ['famille',     ['familledeconstat','familleconstat']],
           ['detail',      ['detaildelanomalie','detailanomalie','detail']],
           ['cin',         ['ldoucinclient','cinlient','ldoucin','cin']],
@@ -1362,7 +1362,13 @@ async function importSingleFile(file, fileIndex, totalFiles, txt, fill) {
           ['actionsdelais',['actionspreconiseesavecdelais','actionsdelais']],
         ];
         colMap.forEach(([key, variants]) => {
-          const idx = hdRow.findIndex(h => variants.some(v => h.includes(v)));
+          let idx = -1;
+          if (key === 'constat') {
+            // Chercher colonne dont le nom est exactement 'constat' ou contient type+anomalie
+            idx = hdRow.findIndex(h => h === 'constat' || variants.some(v => h.includes(v)));
+          } else {
+            idx = hdRow.findIndex(h => variants.some(v => h.includes(v)));
+          }
           if (idx >= 0) colIdx[key] = idx;
         });
         console.log('Colonnes détectées:', JSON.stringify(colIdx));
