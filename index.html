@@ -471,6 +471,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
         <div class="card-hd"><span class="card-title">🔥 Matrice Top Famille × Région</span><span style="font-size:10px;color:#9CA3AF">Top 6 familles × toutes régions</span></div>
         <div id="matrix-fam-reg" style="overflow-x:auto;font-size:11px"></div>
       </div>
+      <!-- Matrice Région × Statut -->
+      <div class="card">
+        <div class="card-hd"><span class="card-title">🗺️ Matrice Région × Statut de traitement</span></div>
+        <div id="matrix-reg-stat" style="overflow-x:auto;font-size:11px"></div>
+      </div>
       <!-- Top Agence × Top Famille -->
       <div class="card">
         <div class="card-hd"><span class="card-title">📊 Top Agences par Famille de constat</span></div>
@@ -1934,6 +1939,46 @@ function renderMatrix(dc) {
     <span style="margin-left:8px;font-style:italic">Cliquer sur une cellule pour filtrer</span>
   </div>`;
 
+  // Matrice Région × Statut
+  const statuts = ['Nouveau','En cours','Clôturé','Contesté'];
+  const statColors = {'Nouveau':'#6B7280','En cours':'#3B82F6','Clôturé':'#10B981','Contesté':'#EF4444'};
+  const el3 = document.getElementById('matrix-reg-stat');
+  if (el3 && regions.length) {
+    const statMatrix = {};
+    regions.forEach(r => { statMatrix[r] = {}; statuts.forEach(s => { statMatrix[r][s] = 0; }); });
+    dc.forEach(c => { if (statMatrix[c.Region] && c.StatutTraitement) statMatrix[c.Region][c.StatutTraitement] = (statMatrix[c.Region][c.StatutTraitement]||0) + 1; });
+    const maxStat = Math.max(...regions.flatMap(r => statuts.map(s => statMatrix[r][s])), 1);
+    const heatStat = (v, s) => {
+      if (!v) return '#F9FAFB';
+      const intensity = v / maxStat;
+      if (s === 'Clôturé') return intensity > 0.5 ? '#059669' : intensity > 0.2 ? '#10B981' : '#D1FAE5';
+      if (s === 'Contesté') return intensity > 0.5 ? '#DC2626' : intensity > 0.2 ? '#F87171' : '#FEE2E2';
+      if (s === 'En cours') return intensity > 0.5 ? '#1D4ED8' : intensity > 0.2 ? '#3B82F6' : '#DBEAFE';
+      return intensity > 0.5 ? '#374151' : intensity > 0.2 ? '#6B7280' : '#F3F4F6';
+    };
+    el3.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Région</th>
+        ${statuts.map(s=>`<th style="padding:5px 10px;text-align:center;font-size:10px;color:${statColors[s]};border-bottom:1.5px solid var(--bd);font-weight:700">${s}</th>`).join('')}
+        <th style="padding:5px 8px;text-align:center;font-size:10px;color:var(--sub);border-bottom:1.5px solid var(--bd)">Total</th>
+      </tr></thead>
+      <tbody>
+        ${regions.map(r => {
+          const total = statuts.reduce((s2,st) => s2 + statMatrix[r][st], 0);
+          return `<tr onclick="filterConstats('region','${r}')" style="cursor:pointer" onmouseover="this.style.background='var(--GL)'" onmouseout="this.style.background=''">
+            <td style="padding:5px 8px;font-size:10px;font-weight:600;color:var(--G);border-bottom:1px solid var(--bd)">${r}</td>
+            ${statuts.map(s => {
+              const v = statMatrix[r][s];
+              const pct = total ? Math.round(v/total*100) : 0;
+              return `<td onclick="event.stopPropagation();filterConstats2('region','${r}','statut','${s}')" style="padding:5px 10px;text-align:center;font-size:10px;font-weight:${v?'700':'400'};background:${heatStat(v,s)};border-bottom:1px solid var(--bd);cursor:pointer" title="${v} (${pct}%)">${v||'·'}${v&&pct?'<div style=\'font-size:8px;font-weight:400;opacity:0.8\'>'+pct+'%</div>':''}</td>`;
+            }).join('')}
+            <td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:var(--G);border-bottom:1px solid var(--bd)">${total}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
   // Top Agence × Famille
   const agcData = grp('Agence', 8, dc);
   const topAgcs = agcData.map(d => d[0]);
@@ -1976,7 +2021,7 @@ function kpiClick(lbl) {
   };
   if (filterMap[lbl]) {
     filterMap[lbl]();
-    showTab('constats');
+    switchTab('constats');
   }
 }
 
@@ -1994,18 +2039,18 @@ function filterConstats(field, value) {
   const el = document.getElementById(fieldMap[field]);
   if (el) el.value = value;
   applyFilters();
-  showTab('constats');
+  switchTab('constats');
 }
 
 function filterConstats2(f1, v1, f2, v2) {
   resetFilters();
-  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga' };
+  const fieldMap = { 'famille': 'f-famille', 'region': 'f-region', 'agence': 'f-rga', 'statut': 'f-statut' };
   const el1 = document.getElementById(fieldMap[f1]);
   const el2 = document.getElementById(fieldMap[f2]);
   if (el1) el1.value = v1;
   if (el2) el2.value = v2;
   applyFilters();
-  showTab('constats');
+  switchTab('constats');
 }
 
 // ══════════════════════════════════
