@@ -1250,7 +1250,7 @@ async function importCanevas(input) {
   try {
     txt.textContent = '🔍 Vérification des doublons...';
     const dvToken = await getToken();
-    let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence,cr2c5_descriptionduconstat&$top=500`;
+    let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence,cr2c5_rga&$top=500`;
     while (dedupUrl) {
       const existResp = await fetch(dedupUrl, {
         headers: { Authorization: 'Bearer ' + dvToken, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0', 'Prefer': 'odata.maxpagesize=500' }
