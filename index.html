@@ -1245,32 +1245,33 @@ async function importCanevas(input) {
   if (logEl)   { logEl.style.display = 'block'; }
   if (logBody) { logBody.innerHTML = ''; }
 
-  // ── Charger TOUTES les clés existantes UNE SEULE FOIS avant tout import ──
-  const existingKeys = new Set();
-  try {
-    txt.textContent = '🔍 Vérification des doublons...';
-    const dvToken = await getToken();
-    let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence&$top=500`;
-    while (dedupUrl) {
-      const existResp = await fetch(dedupUrl, {
-        headers: { Authorization: 'Bearer ' + dvToken, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0', 'Prefer': 'odata.maxpagesize=500' }
-      });
-      if (existResp.ok) {
-        const existData = await existResp.json();
-        (existData.value || []).forEach(c => {
-          const d = c.cr2c5_datedeconstat ? c.cr2c5_datedeconstat.split('T')[0] : '';
-          const a = (c.cr2c5_agence || '').trim().toLowerCase();
-          if (d && a) existingKeys.add(d + '|' + a);
-        });
-        dedupUrl = existData['@odata.nextLink'] || null;
-      } else { dedupUrl = null; }
-    }
-    console.log('✅ Clés existantes:', existingKeys.size, 'paires Date+Agence chargées');
-  } catch(e) { console.warn('Déduplication impossible:', e.message); }
-
   // Traiter les fichiers séquentiellement
   for (let fi = 0; fi < files.length; fi++) {
     const file = files[fi];
+
+    // ── Charger les clés existantes AVANT chaque fichier ──
+    const existingKeys = new Set();
+    try {
+      txt.textContent = '🔍 Vérification des doublons...';
+      const dvToken = await getToken();
+      let dedupUrl = `${DV_URL}/api/data/v9.2/${DV_TABLES.constats}?$select=cr2c5_datedeconstat,cr2c5_agence&$top=500`;
+      while (dedupUrl) {
+        const existResp = await fetch(dedupUrl, {
+          headers: { Authorization: 'Bearer ' + dvToken, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0', 'Prefer': 'odata.maxpagesize=500' }
+        });
+        if (existResp.ok) {
+          const existData = await existResp.json();
+          (existData.value || []).forEach(c => {
+            const d = c.cr2c5_datedeconstat ? c.cr2c5_datedeconstat.split('T')[0] : '';
+            const a = (c.cr2c5_agence || '').trim().toLowerCase();
+            if (d && a) existingKeys.add(d + '|' + a);
+          });
+          dedupUrl = existData['@odata.nextLink'] || null;
+        } else { dedupUrl = null; }
+      }
+      console.log('✅ Clés existantes:', existingKeys.size, 'paires Date+Agence pour', file.name);
+    } catch(e) { console.warn('Déduplication impossible:', e.message); }
+
     txt.textContent = `📂 Fichier ${fi+1}/${files.length} : "${file.name}"...`;
     fill.style.width = Math.round((fi/files.length)*15) + '%';
 
