@@ -2194,7 +2194,8 @@ async function importUsersExcel(input) {
       const iEmail  = col('email') >= 0 ? col('email') : col('mail') >= 0 ? col('mail') : 1;
       const iNom    = col('nom') >= 0 ? col('nom') : col('name') >= 0 ? col('name') : 2;
       const iRole   = col('role') >= 0 ? col('role') : col('rôle') >= 0 ? col('rôle') : 3;
-      addLog('🗂️ Colonnes → Code:'+iCode+' Email:'+iEmail+' Nom:'+iNom+' Role:'+iRole);
+      const iRegion = col('region') >= 0 ? col('region') : col('région') >= 0 ? col('région') : 4;
+      addLog('🗂️ Colonnes → Code:'+iCode+' Email:'+iEmail+' Nom:'+iNom+' Role:'+iRole+' Region:'+iRegion);
 
       const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c !== ''));
       addLog('📝 Lignes de données : ' + dataRows.length);
@@ -2216,12 +2217,17 @@ async function importUsersExcel(input) {
         if (S.rgaUsers.some(u => (u.EmailUtilisateur || '').toLowerCase() === email)) { skip++; continue; }
 
         try {
-          await dvPost(DV_TABLES.users, {
+          const regionRaw = String(r[iRegion] || '').trim().toUpperCase();
+          const userData = {
             cr2c5_coderga:      code || email.split('@')[0],
             cr2c5_adresseemail: email,
             cr2c5_nomcomplet:   nom || code || email.split('@')[0],
             cr2c5_role:         role
-          });
+          };
+          if (regionRaw && REGION_TO_DV[regionRaw] !== undefined) {
+            userData.cr2c5_region = REGION_TO_DV[regionRaw];
+          }
+          await dvPost(DV_TABLES.users, userData);
           ok++;
         } catch(ex) {
           err++;
