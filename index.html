@@ -2026,6 +2026,152 @@ function renderMatrix(dc) {
   </table>`;
 }
 
+// ══════════════════════════════════════
+//  PIÈCES JOINTES — Dataverse Annotations
+// ══════════════════════════════════════
+async function loadPJ(constatId) {
+  const el = document.getElementById('sb-pj-list');
+  if (!el) return;
+  try {
+    const tk = await getToken();
+    const url = `${DV_URL}/api/data/v9.2/annotations?$filter=_objectid_value eq '${constatId}' and objecttypecode eq 'cr2c5_constat'&$select=annotationid,filename,filesize,mimetype,createdon,subject&$orderby=createdon desc`;
+    const rr = await fetch(url, {
+      headers: { Authorization: 'Bearer ' + tk, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0' }
+    });
+    if (!rr.ok) throw new Error(rr.status);
+    const data = await rr.json();
+    const pjs = data.value || [];
+
+    if (!pjs.length) {
+      el.innerHTML = '<div style="font-size:11px;color:var(--sub);padding:6px 0">Aucune pièce jointe</div>';
+      return;
+    }
+
+    el.innerHTML = pjs.map(pj => {
+      const size = pj.filesize ? (pj.filesize > 1024*1024 ? (pj.filesize/1024/1024).toFixed(1)+'MB' : Math.round(pj.filesize/1024)+'KB') : '—';
+      const date = pj.createdon ? new Date(pj.createdon).toLocaleDateString('fr-FR') : '';
+      const ico = getFileIcon(pj.mimetype || '');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--GL);border-radius:7px;margin-bottom:6px;border:1px solid var(--bd)">
+        <span style="font-size:18px">${ico}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--G);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pj.filename||'Sans nom'}</div>
+          <div style="font-size:10px;color:var(--sub)">${size} · ${date}</div>
+        </div>
+        <button onclick="downloadPJ('${pj.annotationid}','${pj.filename||'fichier'}')" style="background:none;border:1px solid var(--bd);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px" title="Télécharger">⬇️</button>
+        <button onclick="deletePJ('${pj.annotationid}','${constatId}')" style="background:none;border:1px solid #FECACA;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#DC2626" title="Supprimer">🗑️</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    if(el) el.innerHTML = '<div style="font-size:11px;color:#DC2626">Erreur chargement: '+e.message+'</div>';
+  }
+}
+
+function getFileIcon(mime) {
+  if (mime.includes('pdf'))   return '📄';
+  if (mime.includes('image')) return '🖼️';
+  if (mime.includes('word') || mime.includes('document')) return '📝';
+  if (mime.includes('excel') || mime.includes('sheet'))   return '📊';
+  if (mime.includes('zip') || mime.includes('rar'))       return '🗜️';
+  return '📎';
+}
+
+async function uploadPJ(input, constatId) {
+  const files = input.files;
+  if (!files.length) return;
+  const statusEl = document.getElementById('sb-pj-status');
+  if (statusEl) statusEl.textContent = '⏳ Upload en cours...';
+
+  const tk = await getToken();
+  let ok = 0, err = 0;
+
+  for (const file of files) {
+    try {
+      // Lire le fichier en base64
+      const b64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res(e.target.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      // Créer l'annotation dans Dataverse
+      const body = {
+        subject: file.name,
+        filename: file.name,
+        mimetype: file.type || 'application/octet-stream',
+        documentbody: b64,
+        objecttypecode: 'cr2c5_constat',
+        'objectid_cr2c5_constat@odata.bind': `/cr2c5_constats(${constatId})`
+      };
+
+      const rr = await fetch(`${DV_URL}/api/data/v9.2/annotations`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + tk,
+          'Content-Type': 'application/json',
+          'OData-MaxVersion': '4.0',
+          'OData-Version': '4.0'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!rr.ok) {
+        const errData = await rr.json();
+        throw new Error(errData.error?.message || rr.status);
+      }
+      ok++;
+    } catch(e) {
+      err++;
+      console.error('Upload PJ error:', file.name, e.message);
+    }
+  }
+
+  input.value = '';
+  if (statusEl) statusEl.textContent = ok + ' fichier(s) uploadé(s)' + (err ? ' · ' + err + ' erreur(s)' : '');
+  await loadPJ(constatId);
+}
+
+async function downloadPJ(annotationId, filename) {
+  try {
+    const tk = await getToken();
+    const rr = await fetch(`${DV_URL}/api/data/v9.2/annotations(${annotationId})?$select=documentbody,mimetype,filename`, {
+      headers: { Authorization: 'Bearer ' + tk, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0' }
+    });
+    if (!rr.ok) throw new Error(rr.status);
+    const data = await rr.json();
+    const b64  = data.documentbody;
+    const mime = data.mimetype || 'application/octet-stream';
+
+    // Télécharger
+    const byteStr = atob(b64);
+    const bytes   = new Uint8Array(byteStr.length);
+    for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: mime });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showToast('❌ Erreur téléchargement: ' + e.message, 'err');
+  }
+}
+
+async function deletePJ(annotationId, constatId) {
+  if (!confirm('Supprimer cette pièce jointe ?')) return;
+  try {
+    const tk = await getToken();
+    const rr = await fetch(`${DV_URL}/api/data/v9.2/annotations(${annotationId})`, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + tk, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0' }
+    });
+    if (!rr.ok) throw new Error(rr.status);
+    showToast('✅ Pièce jointe supprimée', 'ok');
+    await loadPJ(constatId);
+  } catch(e) {
+    showToast('❌ Erreur suppression: ' + e.message, 'err');
+  }
+}
+
 function kpiClick(lbl) {
   const filterMap = {
     'Total constats':    () => { resetFilters(); },
