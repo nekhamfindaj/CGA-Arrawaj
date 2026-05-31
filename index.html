@@ -2713,7 +2713,7 @@ async function exportPPTX() {
   // Slide 2 — KPIs
   const s2 = pptx.addSlide();
   s2.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:G}});
-  addTxt(s2,'📊 Vue d'ensemble',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s2,"📊 Vue d'ensemble",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   addTxt(s2,dc.length+' constats — '+periode,0.4,0.65,'92%',0.35,{fontSize:12,color:'CCFFCC'});
   const kpi=(s,val,lbl,x,y,col)=>{
     s.addShape(pptx.ShapeType.rect,{x,y,w:2.8,h:1.4,fill:{color:GL},line:{color:'E5E7EB',w:1}});
@@ -2733,7 +2733,7 @@ async function exportPPTX() {
   // Slide 3 — Criticité
   const s3 = pptx.addSlide();
   s3.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:G}});
-  addTxt(s3,'⚠️ Répartition par Criticité',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s3,"⚠️ Répartition par Criticité",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   const critMap={'1. Elevé':'Élevé','2. Moyenne':'Moyenne','3. Faible':'Faible'};
   const cg={};
   dc.forEach(c=>{const k=critMap[c.Criticite]||c.Criticite||'Non défini';cg[k]=(cg[k]||0)+1;});
@@ -2751,7 +2751,7 @@ async function exportPPTX() {
   // Slide 4 — Top Familles
   const s4 = pptx.addSlide();
   s4.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:G}});
-  addTxt(s4,'📁 Top Familles de Constats',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s4,"📁 Top Familles de Constats",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   const fg={};
   dc.forEach(c=>{if(c.FamilleConstat)fg[c.FamilleConstat]=(fg[c.FamilleConstat]||0)+1;});
   const tf=Object.entries(fg).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -2768,7 +2768,7 @@ async function exportPPTX() {
   const s5 = pptx.addSlide();
   s5.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:G}});
   const gf=role==='rga'?'Agence':'Region';
-  addTxt(s5,role==='rga'?'🏢 Constats par Agence':'🗺️ Constats par Région',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s5,role==='rga'?"🏢 Constats par Agence":"🗺️ Constats par Région",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   const gd={};
   dc.forEach(c=>{const k=c[gf];if(k)gd[k]=(gd[k]||0)+1;});
   const tg=Object.entries(gd).sort((a,b)=>b[1]-a[1]).slice(0,10);
@@ -2784,7 +2784,7 @@ async function exportPPTX() {
   // Slide 6 — Avancement
   const s6 = pptx.addSlide();
   s6.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:G}});
-  addTxt(s6,'⚙️ État d'Avancement',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s6,"⚙️ État d'Avancement",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   [['Nouveau','6B7280',nouveau],['En cours','3B82F6',encours],['Clôturé','059669',cloture],['Contesté','EF4444',conteste]].forEach(([s,col,v],i)=>{
     const x=0.3+i*3.3;
     s6.addShape(pptx.ShapeType.rect,{x,y:1.3,w:3.0,h:2.0,fill:{color:col}});
@@ -2799,7 +2799,7 @@ async function exportPPTX() {
   // Slide 7 — Constats critiques
   const s7 = pptx.addSlide();
   s7.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:'991B1B'}});
-  addTxt(s7,'🔴 Principaux Constats Critiques',0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
+  addTxt(s7,"🔴 Principaux Constats Critiques",0.4,0.2,'92%',0.6,{fontSize:24,bold:true,color:W});
   dc.filter(c=>c.Criticite?.includes('lev')||c.Criticite==='Élevé').slice(0,5).forEach((c,i)=>{
     const y=1.2+i*1.0;
     s7.addShape(pptx.ShapeType.rect,{x:0.3,y,w:12.4,h:0.85,fill:{color:i%2===0?'FEF2F2':'FFF5F5'},line:{color:'FECACA',w:1}});
@@ -2812,7 +2812,7 @@ async function exportPPTX() {
   // Slide 8 — Recommandations
   const s8 = pptx.addSlide();
   s8.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.1,fill:{color:O}});
-  addTxt(s8,'💡 Points d'Attention & Recommandations',0.4,0.2,'92%',0.6,{fontSize:22,bold:true,color:W});
+  addTxt(s8,"💡 Points d'Attention & Recommandations",0.4,0.2,'92%',0.6,{fontSize:22,bold:true,color:W});
   [
     ['🎯','Prioriser les constats critiques',eleve+' constats à criticité élevée — action immédiate requise'],
     ['⚡','Accélérer les traitements',nouveau+' constats "Nouveaux" sans traitement engagé'],
