@@ -2723,8 +2723,8 @@ async function exportPPTX() {
   addTxt(s2,dc.length+' constats — '+periode,0.4,0.65,'92%',0.35,{fontSize:12,color:'CCFFCC'});
   const kpi=(s,val,lbl,x,y,col)=>{
     s.addShape(pptx.ShapeType.rect,{x,y,w:2.8,h:1.4,fill:{color:GL},line:{color:'E5E7EB',w:1}});
-    addTxt(s,String(val),x,y+0.05,2.8,0.8,{fontSize:36,bold:true,color:col,align:'center'});
-    addTxt(s,lbl,x,y+0.9,2.8,0.4,{fontSize:11,color:'6B7280',align:'center'});
+    addTxt(s,String(val),x,y+0.05,2.8,0.8,{fontSize:40,bold:true,color:col,align:'center'});
+    addTxt(s,lbl,x,y+0.9,2.8,0.4,{fontSize:13,color:'6B7280',align:'center',bold:true});
   };
   kpi(s2,dc.length,'Total Constats',0.3,1.3,G);
   kpi(s2,eleve,'Criticité Élevée',3.3,1.3,'DC2626');
@@ -2749,8 +2749,8 @@ async function exportPPTX() {
     const pct=Math.round(v/dc.length*100);
     s3.addShape(pptx.ShapeType.rect,{x:cx,y:1.3,w:2.8,h:3.8,fill:{color:cc[k]||'9CA3AF'}});
     addTxt(s3,String(v),cx,1.5,2.8,1.2,{fontSize:48,bold:true,color:W,align:'center'});
-    addTxt(s3,pct+'%',cx,2.8,2.8,0.6,{fontSize:24,color:W,align:'center'});
-    addTxt(s3,k,cx,3.6,2.8,0.8,{fontSize:14,bold:true,color:W,align:'center'});
+    addTxt(s3,pct+'%',cx,2.8,2.8,0.6,{fontSize:28,bold:true,color:W,align:'center'});
+    addTxt(s3,k,cx,3.6,2.8,0.8,{fontSize:16,bold:true,color:W,align:'center'});
     cx+=3.1;
   });
 
@@ -2766,8 +2766,8 @@ async function exportPPTX() {
     const y=1.2+i*0.58;
     const bw=Math.max((v/mf)*8.5,0.2);
     s4.addShape(pptx.ShapeType.rect,{x:3.2,y:y+0.06,w:bw,h:0.42,fill:{color:i===0?O:G}});
-    addTxt(s4,f.length>38?f.substring(0,38)+'…':f,0.3,y,2.8,0.5,{fontSize:10,color:DK,align:'right'});
-    addTxt(s4,v+' ('+Math.round(v/dc.length*100)+'%)',3.3+bw,y,1.8,0.5,{fontSize:10,bold:true,color:DK});
+    addTxt(s4,f.length>32?f.substring(0,32)+'…':f,0.3,y,2.8,0.5,{fontSize:12,color:DK,align:'right',bold:true});
+    addTxt(s4,v+' ('+Math.round(v/dc.length*100)+'%)',3.3+bw,y,1.8,0.5,{fontSize:13,bold:true,color:DK});
   });
 
   // Slide 5 — Par région/agence
@@ -2795,12 +2795,12 @@ async function exportPPTX() {
     const x=0.3+i*3.3;
     s6.addShape(pptx.ShapeType.rect,{x,y:1.3,w:3.0,h:2.0,fill:{color:col}});
     addTxt(s6,String(v),x,1.4,3.0,1.0,{fontSize:44,bold:true,color:W,align:'center'});
-    addTxt(s6,(dc.length?Math.round(v/dc.length*100):0)+'%',x,2.4,3.0,0.5,{fontSize:18,color:W,align:'center'});
-    addTxt(s6,s,x,3.0,3.0,0.5,{fontSize:13,bold:true,color:W,align:'center'});
+    addTxt(s6,(dc.length?Math.round(v/dc.length*100):0)+'%',x,2.4,3.0,0.5,{fontSize:22,bold:true,color:W,align:'center'});
+    addTxt(s6,s,x,3.0,3.0,0.5,{fontSize:15,bold:true,color:W,align:'center'});
   });
   s6.addShape(pptx.ShapeType.rect,{x:0.3,y:4.0,w:12.2,h:0.5,fill:{color:'E5E7EB'}});
   if(txCl>0) s6.addShape(pptx.ShapeType.rect,{x:0.3,y:4.0,w:12.2*(txCl/100),h:0.5,fill:{color:'059669'}});
-  addTxt(s6,'Taux de clôture : '+txCl+'%',0.3,4.6,12,0.5,{fontSize:14,bold:true,color:G,align:'center'});
+  addTxt(s6,'Taux de clôture : '+txCl+'%',0.3,4.6,12,0.5,{fontSize:18,bold:true,color:G,align:'center'});
 
   // Slide 7 — Constats critiques
   const s7 = pptx.addSlide();
@@ -2810,9 +2810,9 @@ async function exportPPTX() {
     const y=1.2+i*1.0;
     s7.addShape(pptx.ShapeType.rect,{x:0.3,y,w:12.4,h:0.85,fill:{color:i%2===0?'FEF2F2':'FFF5F5'},line:{color:'FECACA',w:1}});
     s7.addShape(pptx.ShapeType.rect,{x:0.3,y,w:0.1,h:0.85,fill:{color:'DC2626'}});
-    addTxt(s7,(c.Region||'')+'  ·  '+(c.CodeRGA||'')+'  ·  '+(c.Agence||''),0.55,y+0.04,12,0.3,{fontSize:9,color:'6B7280'});
+    addTxt(s7,(c.Region||'')+'  ·  '+(c.CodeRGA||'')+'  ·  '+(c.Agence||''),0.55,y+0.04,12,0.3,{fontSize:11,color:'6B7280',bold:true});
     const desc=(c.LibelleConstat||'').substring(0,90)+(c.LibelleConstat?.length>90?'…':'');
-    addTxt(s7,desc||'(sans description)',0.55,y+0.35,12,0.4,{fontSize:11,bold:true,color:'991B1B'});
+    addTxt(s7,desc||'(sans description)',0.55,y+0.35,12,0.42,{fontSize:13,bold:true,color:'991B1B'});
   });
 
   // Slide 8 — Recommandations
@@ -2827,8 +2827,8 @@ async function exportPPTX() {
   ].forEach(([ico,tit,desc],i)=>{
     const x=i%2===0?0.3:6.6, y=i<2?1.3:3.2;
     s8.addShape(pptx.ShapeType.rect,{x,y,w:5.9,h:1.7,fill:{color:GL},line:{color:'E5E7EB',w:1}});
-    addTxt(s8,ico+' '+tit,x+0.2,y+0.15,5.5,0.5,{fontSize:13,bold:true,color:G});
-    addTxt(s8,desc,x+0.2,y+0.65,5.5,0.85,{fontSize:11,color:'374151',wrap:true});
+    addTxt(s8,ico+' '+tit,x+0.2,y+0.15,5.5,0.5,{fontSize:15,bold:true,color:G});
+    addTxt(s8,desc,x+0.2,y+0.65,5.5,0.85,{fontSize:13,color:'374151',wrap:true});
   });
 
   // ══ SLIDES MATRICES ══
@@ -2866,25 +2866,47 @@ async function exportPPTX() {
   // Helper table heatmap
   const mkHeatTable = (slide, rowLabels, colLabels, getVal, getColor, startY=1.1) => {
     const maxCols = Math.min(colLabels.length, 10);
-    const colW = Math.min(1.6, 9.8/Math.max(maxCols,1));
-    const rowH = Math.min(0.52, 5.5/Math.max(rowLabels.length,1));
+    const colW = Math.min(1.7, 10.0/Math.max(maxCols,1));
+    const rowH = Math.min(0.6, 5.6/Math.max(rowLabels.length+1,1));
     const cols = colLabels.slice(0,maxCols);
-    addTxt(slide,'',0.3,startY,2.3,rowH,{fontSize:8,bold:true,color:DK});
+
+    // En-tête colonnes — fond vert foncé, texte blanc
+    slide.addShape(pptx.ShapeType.rect,{x:2.5,y:startY,w:colW*cols.length,h:rowH,fill:{color:G}});
     cols.forEach((c,ci)=>{
-      const lbl = c.length>10?c.substring(0,10)+'…':c;
-      addTxt(slide,lbl,2.6+ci*colW,startY,colW,rowH,{fontSize:7,color:DK,bold:true,align:'center',wrap:true});
+      const lbl = c.length>11?c.substring(0,11)+'…':c;
+      addTxt(slide,lbl,2.5+ci*colW,startY,colW,rowH,{fontSize:9,color:W,bold:true,align:'center',wrap:true});
     });
+
+    // En-tête ligne vide
+    slide.addShape(pptx.ShapeType.rect,{x:0.2,y:startY,w:2.2,h:rowH,fill:{color:G}});
+
+    // Lignes
     rowLabels.forEach((r,ri)=>{
       const y = startY+(ri+1)*rowH;
-      const lbl = r.length>20?r.substring(0,20)+'…':r;
-      addTxt(slide,lbl,0.3,y,2.2,rowH,{fontSize:8,color:DK,bold:true});
+      const lbl = r.length>22?r.substring(0,22)+'…':r;
+      // Fond alterné pour lisibilité
+      slide.addShape(pptx.ShapeType.rect,{x:0.2,y,w:2.2,h:rowH,fill:{color:ri%2===0?'F9FAFB':'F3F4F6'}});
+      addTxt(slide,lbl,0.25,y,2.1,rowH,{fontSize:10,color:'1F2937',bold:true,valign:'middle'});
       cols.forEach((c,ci)=>{
         const v = getVal(r,c);
-        const col = getColor(v,r,c);
-        slide.addShape(pptx.ShapeType.rect,{x:2.6+ci*colW+0.02,y:y+0.02,w:colW-0.04,h:rowH-0.04,fill:{color:col}});
-        if(v>0) addTxt(slide,String(v),2.6+ci*colW,y,colW,rowH,{fontSize:8,bold:true,color:'FFFFFF',align:'center'});
+        const {bg,fg} = getColor(v,r,c);
+        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:y+0.03,w:colW-0.06,h:rowH-0.06,fill:{color:bg}});
+        const disp = v>0 ? String(v) : '·';
+        addTxt(slide,disp,2.5+ci*colW,y,colW,rowH,{fontSize:v>0?12:10,bold:v>0,color:v>0?fg:'CCCCCC',align:'center',valign:'middle'});
       });
     });
+
+    // Ligne total
+    const totY = startY+(rowLabels.length+1)*rowH;
+    if(totY < 7.2) {
+      slide.addShape(pptx.ShapeType.rect,{x:0.2,y:totY,w:2.2,h:rowH*0.8,fill:{color:G}});
+      addTxt(slide,'TOTAL',0.25,totY,2.1,rowH*0.8,{fontSize:10,color:W,bold:true,valign:'middle'});
+      cols.forEach((c,ci)=>{
+        const tot = rowLabels.reduce((s,r)=>s+getVal(r,c),0);
+        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:totY+0.03,w:colW-0.06,h:rowH*0.8-0.06,fill:{color:O}});
+        addTxt(slide,String(tot),2.5+ci*colW,totY,colW,rowH*0.8,{fontSize:11,bold:true,color:W,align:'center',valign:'middle'});
+      });
+    }
   };
 
   // MATRICE 1 — Famille × Groupe
