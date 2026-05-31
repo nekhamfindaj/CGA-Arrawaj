@@ -2675,12 +2675,17 @@ function exportGlobal(){
 }
 
 async function exportPPTX() {
-  const dc = S.filtered || S.constats;
+  const dc = getDashConstats();
   if (!dc.length) { showToast('Aucun constat à exporter','err'); return; }
   if (typeof PptxGenJS === 'undefined') { showToast('❌ PptxGenJS non chargé','err'); return; }
 
   const role = S.role;
-  const periode = document.querySelector('.period-btn.active')?.textContent || 'Toutes dates';
+  // Récupérer la période affichée
+  const dateFrom = document.getElementById('dp-date-from')?.value || '';
+  const dateTo   = document.getElementById('dp-date-to')?.value   || '';
+  const periode  = dateFrom && dateTo ? dateFrom+' → '+dateTo :
+                   dateFrom ? 'Depuis '+dateFrom :
+                   document.querySelector('.active-dp')?.textContent || 'Toutes dates';
   const dateStr = new Date().toLocaleDateString('fr-FR');
   const titreMap = { admin:'Rapport Central CGA', dr:'Rapport Régional CGA', rga:'Rapport Groupe Agences CGA' };
   const titre = titreMap[role] || 'Rapport CGA';
