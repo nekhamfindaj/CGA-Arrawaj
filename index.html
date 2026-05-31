@@ -2831,7 +2831,98 @@ async function exportPPTX() {
     addTxt(s8,desc,x+0.2,y+0.65,5.5,0.85,{fontSize:11,color:'374151',wrap:true});
   });
 
-  // Slide 9 — Conclusion
+  // ══ SLIDES MATRICES ══
+  const mkHeader = (slide, title, sub) => {
+    slide.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.0,fill:{color:G}});
+    addTxt(slide,title,0.4,0.1,'92%',0.55,{fontSize:22,bold:true,color:W});
+    if(sub) addTxt(slide,sub,0.4,0.62,'92%',0.3,{fontSize:11,color:'CCFFCC'});
+  };
+
+  const heatFam = (v) => {
+    if(!v) return 'F3F4F6';
+    if(v>=10) return 'DC2626';
+    if(v>=6)  return 'F59E0B';
+    if(v>=3)  return 'FCD34D';
+    return 'D1FAE5';
+  };
+
+  const heatStat3 = (v,s) => {
+    if(!v) return 'F9FAFB';
+    if(s==='Cloture'||s==='Clôturé') return v>5?'059669':v>2?'10B981':'D1FAE5';
+    if(s==='Conteste'||s==='Contesté') return v>3?'DC2626':v>1?'F87171':'FEE2E2';
+    if(s==='En cours') return v>5?'1D4ED8':v>2?'3B82F6':'DBEAFE';
+    return v>5?'374151':v>2?'6B7280':'F3F4F6';
+  };
+
+  // Groupes selon rôle
+  const grpField2 = role==='admin' ? 'Region' : 'Agence';
+  const grpLabel2 = role==='admin' ? 'Région' : 'Agence';
+  const topFams3 = Object.entries((() => { const fg={}; dc.forEach(c=>{if(c.FamilleConstat)fg[c.FamilleConstat]=(fg[c.FamilleConstat]||0)+1;}); return fg; })()).sort((a,b)=>b[1]-a[1]).slice(0,6).map(d=>d[0]);
+  const grpData2 = {};
+  dc.forEach(c=>{const k=c[grpField2];if(k)grpData2[k]=(grpData2[k]||0)+1;});
+  const topGrp2 = Object.keys(grpData2).sort((a,b)=>grpData2[b]-grpData2[a]).slice(0,8);
+  const statuts3 = ['Nouveau','En cours','Clôturé','Contesté'];
+
+  // Helper table heatmap
+  const mkHeatTable = (slide, rowLabels, colLabels, getVal, getColor, startY=1.1) => {
+    const maxCols = Math.min(colLabels.length, 10);
+    const colW = Math.min(1.6, 9.8/Math.max(maxCols,1));
+    const rowH = Math.min(0.52, 5.5/Math.max(rowLabels.length,1));
+    const cols = colLabels.slice(0,maxCols);
+    addTxt(slide,'',0.3,startY,2.3,rowH,{fontSize:8,bold:true,color:DK});
+    cols.forEach((c,ci)=>{
+      const lbl = c.length>10?c.substring(0,10)+'…':c;
+      addTxt(slide,lbl,2.6+ci*colW,startY,colW,rowH,{fontSize:7,color:DK,bold:true,align:'center',wrap:true});
+    });
+    rowLabels.forEach((r,ri)=>{
+      const y = startY+(ri+1)*rowH;
+      const lbl = r.length>20?r.substring(0,20)+'…':r;
+      addTxt(slide,lbl,0.3,y,2.2,rowH,{fontSize:8,color:DK,bold:true});
+      cols.forEach((c,ci)=>{
+        const v = getVal(r,c);
+        const col = getColor(v,r,c);
+        slide.addShape(pptx.ShapeType.rect,{x:2.6+ci*colW+0.02,y:y+0.02,w:colW-0.04,h:rowH-0.04,fill:{color:col}});
+        if(v>0) addTxt(slide,String(v),2.6+ci*colW,y,colW,rowH,{fontSize:8,bold:true,color:'FFFFFF',align:'center'});
+      });
+    });
+  };
+
+  // MATRICE 1 — Famille × Groupe
+  if(topFams3.length && topGrp2.length) {
+    const sm1 = pptx.addSlide();
+    mkHeader(sm1,'Matrice Famille × '+grpLabel2,'Top '+topFams3.length+' familles · '+dc.length+' constats analysés');
+    const famGrpM = {};
+    dc.forEach(c=>{if(c.FamilleConstat&&c[grpField2]){if(!famGrpM[c.FamilleConstat])famGrpM[c.FamilleConstat]={};famGrpM[c.FamilleConstat][c[grpField2]]=(famGrpM[c.FamilleConstat][c[grpField2]]||0)+1;}});
+    mkHeatTable(sm1, topFams3, topGrp2, (r,c)=>famGrpM[r]?.[c]||0, (v)=>heatFam(v), 1.05);
+    const lgd=[{c:'DC2626',l:'≥10'},{c:'F59E0B',l:'6-9'},{c:'FCD34D',l:'3-5'},{c:'D1FAE5',l:'1-2'},{c:'F3F4F6',l:'0'}];
+    lgd.forEach(({c,l},i)=>{sm1.addShape(pptx.ShapeType.rect,{x:0.3+i*2.4,y:6.85,w:0.22,h:0.22,fill:{color:c}});addTxt(sm1,l,0.58+i*2.4,6.83,2.0,0.28,{fontSize:8,color:DK});});
+  }
+
+  // MATRICE 2 — Statut × Groupe
+  if(topGrp2.length) {
+    const sm2 = pptx.addSlide();
+    mkHeader(sm2,'Matrice Statut × '+grpLabel2,'État de traitement par '+grpLabel2.toLowerCase());
+    const statGrpM = {};
+    statuts3.forEach(s=>{statGrpM[s]={};topGrp2.forEach(g=>{statGrpM[s][g]=0;});});
+    dc.forEach(c=>{if(c.StatutTraitement&&c[grpField2]&&statGrpM[c.StatutTraitement])statGrpM[c.StatutTraitement][c[grpField2]]=(statGrpM[c.StatutTraitement][c[grpField2]]||0)+1;});
+    mkHeatTable(sm2, statuts3, topGrp2, (r,c)=>statGrpM[r]?.[c]||0, (v,r)=>heatStat3(v,r), 1.05);
+  }
+
+  // MATRICE 3 — Top Agences × Familles (admin et dr)
+  if(role !== 'rga') {
+    const agcData3 = {};
+    dc.forEach(c=>{if(c.Agence)agcData3[c.Agence]=(agcData3[c.Agence]||0)+1;});
+    const topAgc3 = Object.keys(agcData3).sort((a,b)=>agcData3[b]-agcData3[a]).slice(0,8);
+    if(topAgc3.length && topFams3.length) {
+      const sm3 = pptx.addSlide();
+      mkHeader(sm3,'Top Agences × Familles','Concentration des anomalies par agence');
+      const agcFamM = {};
+      dc.forEach(c=>{if(c.Agence&&c.FamilleConstat){if(!agcFamM[c.Agence])agcFamM[c.Agence]={};agcFamM[c.Agence][c.FamilleConstat]=(agcFamM[c.Agence][c.FamilleConstat]||0)+1;}});
+      mkHeatTable(sm3, topAgc3, topFams3, (r,c)=>agcFamM[r]?.[c]||0, (v)=>heatFam(v), 1.05);
+    }
+  }
+
+  // Slide Conclusion
   const s9 = pptx.addSlide();
   s9.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:'100%',fill:{color:G}});
   s9.addShape(pptx.ShapeType.rect,{x:0,y:4.5,w:'100%',h:3.0,fill:{color:O}});
