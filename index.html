@@ -376,7 +376,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
       <button id="btn-refresh" class="btn btn-secondary btn-sm" onclick="refreshData()" title="Actualiser">🔄</button>
       <button class="btn btn-secondary btn-sm" onclick="logout()" title="Se déconnecter" style="font-size:11px">⎋ Quitter</button>
       <button id="btn-export" class="btn btn-secondary btn-sm" onclick="exportExcel()">📥 Export</button>
-      <button id="btn-synthese" class="btn btn-secondary btn-sm" onclick="exportSynthese()" style="display:none">📊 Synthèse</button>
+      <button id="btn-synthese" class="btn btn-secondary btn-sm" onclick="exportPPTX()" style="display:none">📊 Synthèse PPTX</button>
       <button id="btn-global" class="btn btn-secondary btn-sm" onclick="exportGlobal()" style="display:none" title="Export structuré pour script Python notifications">📤 Export Global</button>
       <button id="btn-import" class="btn btn-primary" onclick="document.getElementById('file-input').click()" style="display:none">📥 Importer canevas(s)</button>
       <input type="file" id="file-input" accept=".xlsx,.xls" multiple style="display:none" onchange="importCanevas(this)">
