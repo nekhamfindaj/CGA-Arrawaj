@@ -2203,7 +2203,17 @@ async function importUsersExcel(input) {
       if(dataRows.length === 0) { addLog('⚠️ Aucune donnée trouvée — vérifiez le format','#F59E0B'); return; }
       addLog('🔎 Exemple ligne 1 : ' + dataRows[0].slice(0,5).join(' | '));
 
-      const roleMap = { 'admin':1, 'dr':3, 'rga':2, 'administrateur':1, 'directeur':3, 'controleur':2, 'contrôleur':2 };
+      const normRole = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+      const roleMap = {
+        'admin':1, 'administrateur':1,
+        'dr':3, 'directeur':3, 'directeurregional':3, 'directionregionale':3,
+        'rga':2, 'controleur':2, 'controleurterrain':2, 'cga':2
+      };
+      const getRole = (raw) => {
+        const n = normRole(raw);
+        return roleMap[n] ?? (n.startsWith('dr')?3 : n.startsWith('rga')||n.startsWith('ctrl')?2 : 2);
+      };
+      addLog('🔑 Mapping rôles : admin=1, rga=2, dr=3');
       let ok = 0, skip = 0, err = 0;
 
       for (const r of dataRows) {
@@ -2211,7 +2221,8 @@ async function importUsersExcel(input) {
         const email   = String(r[iEmail] || '').trim().toLowerCase();
         const nom     = String(r[iNom]   || '').trim();
         const roleRaw = String(r[iRole]  || 'rga').trim().toLowerCase();
-        const role    = roleMap[roleRaw] ?? 2;
+        const role    = getRole(roleRaw);
+        addLog('  → '+email+' : role='+roleRaw+' → DV='+role+' region='+regionRaw);
 
         if (!email || !email.includes('@')) { skip++; continue; }
         if (S.rgaUsers.some(u => (u.EmailUtilisateur || '').toLowerCase() === email)) { skip++; continue; }
@@ -2949,8 +2960,8 @@ async function exportPPTX() {
     const famGrpM = {};
     dc.forEach(c=>{if(c.FamilleConstat&&c[grpField2]){if(!famGrpM[c.FamilleConstat])famGrpM[c.FamilleConstat]={};famGrpM[c.FamilleConstat][c[grpField2]]=(famGrpM[c.FamilleConstat][c[grpField2]]||0)+1;}});
     mkHeatTable(sm1, topFams3, topGrp2, (r,c)=>famGrpM[r]?.[c]||0, (v)=>heatFam(v), 1.05);
-    const lgd=[{c:'DC2626',l:'≥10'},{c:'F59E0B',l:'6-9'},{c:'FCD34D',l:'3-5'},{c:'D1FAE5',l:'1-2'},{c:'F3F4F6',l:'0'}];
-    lgd.forEach(({c,l},i)=>{sm1.addShape(pptx.ShapeType.rect,{x:0.3+i*2.4,y:6.85,w:0.22,h:0.22,fill:{color:c}});addTxt(sm1,l,0.58+i*2.4,6.83,2.0,0.28,{fontSize:8,color:DK});});
+    const lgd=[{c:'991B1B',l:'≥10 Critique'},{c:'DC2626',l:'6-9 Élevé'},{c:'F59E0B',l:'3-5 Modéré'},{c:'FEF3C7',l:'1-2 Faible'},{c:'F3F4F6',l:'0 Zéro'}];
+    lgd.forEach(({c,l},i)=>{sm1.addShape(pptx.ShapeType.rect,{x:0.3+i*2.4,y:6.85,w:0.22,h:0.22,fill:{color:c},line:{color:'CCCCCC',w:0.5}});addTxt(sm1,l,0.58+i*2.4,6.83,2.0,0.28,{fontSize:8,color:'374151'});});
   }
 
   // MATRICE 2 — Statut × Groupe
