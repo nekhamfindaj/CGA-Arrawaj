@@ -2789,6 +2789,23 @@ function openSidebar(id){
     `)}
   `;
 
+  // ══ SECTION PIÈCES JOINTES ══
+  const pjSection = document.createElement('div');
+  pjSection.style.cssText = 'margin:12px 0 16px 0';
+  pjSection.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--G);text-transform:uppercase;letter-spacing:0.8px;padding:6px 0;border-bottom:2px solid var(--bd);margin-bottom:10px">📎 Pièces Jointes</div>
+    <div id="sb-pj-list" style="margin-bottom:10px"><div style="font-size:11px;color:var(--sub)">Chargement...</div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <label for="sb-pj-input" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--G);color:#fff;border-radius:7px;font-size:12px;font-weight:600">
+        📎 Ajouter un fichier
+      </label>
+      <input type="file" id="sb-pj-input" style="display:none" multiple onchange="uploadPJ(this,'${c.Id}')">
+      <span id="sb-pj-status" style="font-size:11px;color:var(--sub)"></span>
+    </div>
+  `;
+  document.getElementById('sb-body').appendChild(pjSection);
+  loadPJ('${c.Id}');
+
   document.getElementById('sb-overlay').classList.add('open');
   document.getElementById('sidebar').classList.add('open');
 }
