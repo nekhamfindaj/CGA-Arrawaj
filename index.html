@@ -560,7 +560,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
           <div class="card-hd">
             <span class="card-title">👥 Mapping RGA → Utilisateurs <span id="users-count" style="font-size:10px;font-weight:400;color:var(--sub)"></span></span>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-users-file').click()" title="Importer depuis Excel">📥 Import Excel</button>
+              <label for="import-users-file" class="btn btn-outline btn-sm" style="cursor:pointer;margin:0" title="Importer depuis Excel">📥 Import Excel</label>
               <input type="file" id="import-users-file" accept=".xlsx,.xls" style="display:none" onchange="importUsersExcel(this)">
               <button class="btn btn-primary btn-sm" onclick="showAddUser()">+ Ajouter</button>
             </div>
