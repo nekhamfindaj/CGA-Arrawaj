@@ -392,6 +392,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
     </div>
     <div class="nav-tab admin-tab" data-tab="rga" onclick="switchTab('rga')" style="display:none">🏢 Analyse RGA</div>
     <div class="nav-tab admin-tab" data-tab="admin" onclick="switchTab('admin')" style="display:none">⚙️ Administration</div>
+    <div class="nav-tab" data-tab="guide" onclick="switchTab('guide')">📖 Guide</div>
   </nav>
 
   <!-- Main -->
@@ -738,6 +739,194 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
       </div>
 
     </div>
+
+  <!-- ══ ONGLET GUIDE ══ -->
+  <div id="tab-guide" style="display:none;padding:16px">
+
+    <!-- En-tête -->
+    <div style="background:linear-gradient(135deg,var(--G),#2D7A3A);border-radius:12px;padding:24px;margin-bottom:20px;color:#fff">
+      <div style="font-size:22px;font-weight:700;margin-bottom:8px">📖 Guide d'utilisation — ArrawajOne CGA</div>
+      <div style="font-size:13px;opacity:0.85">Fondation Arrawaj · Module Suivi Constats CGA · v5.1</div>
+    </div>
+
+    <!-- Philosophie -->
+    <div class="card" style="margin-bottom:16px;border-left:4px solid var(--O)">
+      <div class="card-hd"><span class="card-title">💡 Philosophie du Suivi des Constats</span></div>
+      <div style="padding:16px;font-size:13px;line-height:1.8;color:#374151">
+        <p style="margin-bottom:12px">Un constat CGA n'est pas une sanction — c'est une <strong style="color:var(--G)">opportunité d'amélioration</strong>. Chaque anomalie détectée est une chance de renforcer nos pratiques, protéger nos clients et consolider la confiance envers l'institution.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+          <div style="background:#F0FDF4;border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:var(--G);margin-bottom:6px">🎯 L'objectif</div>
+            <div style="font-size:12px">Traiter chaque constat avec <strong>rigueur et réactivité</strong> pour démontrer la maturité opérationnelle de nos agences.</div>
+          </div>
+          <div style="background:#FFF7ED;border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:var(--O);margin-bottom:6px">⚡ La réactivité</div>
+            <div style="font-size:12px">Un constat non traité dans les délais est un signal de <strong>dysfonctionnement managérial</strong> — pas seulement opérationnel.</div>
+          </div>
+          <div style="background:#EFF6FF;border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:#1D4ED8;margin-bottom:6px">🤝 La responsabilité</div>
+            <div style="font-size:12px">Chaque acteur — CP, CA, RGA, DR — est <strong>co-responsable</strong> de la qualité du traitement dans son périmètre.</div>
+          </div>
+          <div style="background:#FEF2F2;border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:#DC2626;margin-bottom:6px">🔴 La criticité</div>
+            <div style="font-size:12px">Les constats à <strong>criticité élevée</strong> exigent une prise en charge immédiate — sous 48h maximum.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide RGA -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hd" style="background:#F0FDF4">
+        <span class="card-title" style="color:var(--G)">👷 Guide RGA — Contrôleur Terrain</span>
+      </div>
+      <div style="padding:16px;font-size:13px;color:#374151">
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:var(--G);font-size:14px;margin-bottom:8px">📥 1. Importer votre canevas</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Remplissez votre <strong>canevas Excel</strong> de déclaration des anomalies</li>
+            <li>Connectez-vous sur <strong>ArrawajOne</strong> avec votre compte M365</li>
+            <li>Cliquez sur <strong>"📥 Importer canevas(s)"</strong> en haut à droite</li>
+            <li>Sélectionnez votre fichier Excel — l'import est <strong>automatique</strong></li>
+            <li>Vérifiez le <strong>journal d'import</strong> : lignes chargées / ignorées</li>
+          </ol>
+        </div>
+        <div style="background:#FEF3C7;border-radius:8px;padding:10px;margin-bottom:16px;font-size:12px">
+          ⚠️ <strong>Important :</strong> Un fichier déjà importé est automatiquement détecté et rejeté pour éviter les doublons.
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:var(--G);font-size:14px;margin-bottom:8px">👁️ 2. Suivre vos constats</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Allez dans l'onglet <strong>"Constats"</strong></li>
+            <li>Vous voyez <strong>uniquement vos constats</strong> (sécurité par rôle)</li>
+            <li>Cliquez sur 👁️ pour ouvrir le <strong>détail d'un constat</strong></li>
+            <li>Consultez les <strong>recommandations CGA</strong> et les actions requises</li>
+          </ol>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:var(--G);font-size:14px;margin-bottom:8px">✏️ 3. Mettre à jour le traitement</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Dans le panneau détail, renseignez les <strong>Actions/Mesures prises</strong></li>
+            <li>Changez le <strong>statut</strong> : Nouveau → En cours → Clôturé</li>
+            <li>Ajoutez les <strong>pièces justificatives</strong> (📎 Ajouter un fichier)</li>
+            <li>La sauvegarde est <strong>automatique</strong> à chaque modification</li>
+          </ol>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--G);font-size:14px;margin-bottom:8px">📊 4. Générer votre rapport de sensibilisation</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Sélectionnez la <strong>période</strong> souhaitée (7 jours, Ce mois...)</li>
+            <li>Cliquez sur <strong>"📊 Synthèse PPTX"</strong></li>
+            <li>Le rapport est généré avec vos constats et agences</li>
+            <li>Utilisez-le lors de vos <strong>réunions d'équipe</strong></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide DR -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hd" style="background:#EFF6FF">
+        <span class="card-title" style="color:#1D4ED8">🏢 Guide DR — Directeur Régional</span>
+      </div>
+      <div style="padding:16px;font-size:13px;color:#374151">
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:#1D4ED8;font-size:14px;margin-bottom:8px">📊 1. Piloter votre région</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Le <strong>Tableau de bord</strong> affiche tous les constats de votre région</li>
+            <li>Analysez les <strong>matrices heatmap</strong> pour identifier les zones à risque</li>
+            <li>Filtrez par <strong>RGA, agence, famille ou criticité</strong></li>
+            <li>Cliquez sur une carte KPI pour accéder directement aux constats filtrés</li>
+          </ol>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:#1D4ED8;font-size:14px;margin-bottom:8px">⚙️ 2. Superviser le traitement</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Surveillez le <strong>taux de clôture</strong> de votre région</li>
+            <li>Identifiez les constats <strong>"Nouveaux"</strong> sans prise en charge</li>
+            <li>Validez ou contestez les actions remontées par vos RGA</li>
+            <li>Renseignez les <strong>Retours DR</strong> dans le panneau détail</li>
+          </ol>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-weight:700;color:#1D4ED8;font-size:14px;margin-bottom:8px">📅 3. Délais de traitement recommandés</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="background:#FEF2F2;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:#DC2626">48h</div>
+              <div style="font-size:11px;color:#6B7280">Criticité Élevée</div>
+            </div>
+            <div style="background:#FEF3C7;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:#F59E0B">7 j</div>
+              <div style="font-size:11px;color:#6B7280">Criticité Moyenne</div>
+            </div>
+            <div style="background:#F0FDF4;border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:22px;font-weight:700;color:#059669">30 j</div>
+              <div style="font-size:11px;color:#6B7280">Criticité Faible</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:#1D4ED8;font-size:14px;margin-bottom:8px">📊 4. Réunion régionale de sensibilisation</div>
+          <ol style="padding-left:20px;line-height:2">
+            <li>Sélectionnez la période de la réunion</li>
+            <li>Générez la <strong>Synthèse PPTX</strong> — elle inclut les matrices de votre région</li>
+            <li>Présentez les <strong>top familles d'anomalies</strong> et l'état d'avancement</li>
+            <li>Fixez des <strong>objectifs de clôture</strong> pour la prochaine réunion</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bonnes pratiques -->
+    <div class="card" style="margin-bottom:16px;border-left:4px solid var(--O)">
+      <div class="card-hd"><span class="card-title">⭐ Bonnes Pratiques & Indicateurs Cibles</span></div>
+      <div style="padding:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px">
+          <div style="background:var(--GL);border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:var(--G);margin-bottom:8px">✅ À faire</div>
+            <ul style="padding-left:16px;line-height:2;color:#374151">
+              <li>Importer le canevas <strong>chaque semaine</strong></li>
+              <li>Traiter les constats critiques <strong>sous 48h</strong></li>
+              <li>Joindre les <strong>preuves de correction</strong></li>
+              <li>Mettre à jour le statut à chaque <strong>avancement</strong></li>
+              <li>Utiliser le PPTX pour les <strong>réunions terrain</strong></li>
+            </ul>
+          </div>
+          <div style="background:#FEF2F2;border-radius:8px;padding:12px">
+            <div style="font-weight:700;color:#DC2626;margin-bottom:8px">❌ À éviter</div>
+            <ul style="padding-left:16px;line-height:2;color:#374151">
+              <li>Laisser des constats en <strong>"Nouveau"</strong> plus de 48h</li>
+              <li>Clôturer sans <strong>pièce justificative</strong></li>
+              <li>Importer le même fichier <strong>plusieurs fois</strong></li>
+              <li>Ignorer les constats à <strong>criticité élevée</strong></li>
+              <li>Contester sans <strong>argumentation</strong> documentée</li>
+            </ul>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+          <div style="background:var(--GL);border-radius:8px;padding:10px">
+            <div style="font-size:26px;font-weight:700;color:var(--G)">≥ 80%</div>
+            <div style="font-size:11px;color:#6B7280">Taux de clôture cible</div>
+          </div>
+          <div style="background:#FEF3C7;border-radius:8px;padding:10px">
+            <div style="font-size:26px;font-weight:700;color:#F59E0B">≤ 48h</div>
+            <div style="font-size:11px;color:#6B7280">Délai criticité élevée</div>
+          </div>
+          <div style="background:#EFF6FF;border-radius:8px;padding:10px">
+            <div style="font-size:26px;font-weight:700;color:#1D4ED8">100%</div>
+            <div style="font-size:11px;color:#6B7280">PJ pour clôture</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer guide -->
+    <div style="text-align:center;padding:16px;color:#9CA3AF;font-size:11px">
+      ArrawajOne — Module Suivi Constats CGA · Fondation Arrawaj · v5.1<br>
+      Pour toute question : contacter la Direction Risques & Contrôle
+    </div>
+
+  </div>
 
   </main>
 </div>
@@ -3345,6 +3534,7 @@ function exportRGA(){
 function switchTab(tab){
   S.tab=tab;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  ['dashboard','constats','rga','admin','guide'].forEach(id=>{const el=document.getElementById('tab-'+id);if(el)el.style.display=el.id==='tab-'+tab?'block':'none';});
   ['dashboard','constats','rga','admin'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.style.display=t===tab?'':'none';});
   if(tab==='rga'&&S.role==='admin') renderRGA();
   closeSidebar();
