@@ -2034,7 +2034,7 @@ async function loadPJ(constatId) {
   if (!el) return;
   try {
     const tk = await getToken();
-    const url = `${DV_URL}/api/data/v9.2/annotations?$filter=_objectid_value eq '${constatId}' and objecttypecode eq 'cr2c5_constat'&$select=annotationid,filename,filesize,mimetype,createdon,subject&$orderby=createdon desc`;
+    const url = DV_URL+'/api/data/v9.2/annotations?$filter=_objectid_value eq \'' + constatId + '\' and objecttypecode eq \'cr2c5_constat\'&$select=annotationid,filename,filesize,mimetype,createdon,subject&$orderby=createdon desc';
     const rr = await fetch(url, {
       headers: { Authorization: 'Bearer ' + tk, 'OData-MaxVersion': '4.0', 'OData-Version': '4.0' }
     });
@@ -2790,6 +2790,7 @@ function openSidebar(id){
   `;
 
   // ══ SECTION PIÈCES JOINTES ══
+  const cId = c.Id;
   const pjSection = document.createElement('div');
   pjSection.style.cssText = 'margin:12px 0 16px 0';
   pjSection.innerHTML = `
@@ -2799,12 +2800,12 @@ function openSidebar(id){
       <label for="sb-pj-input" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--G);color:#fff;border-radius:7px;font-size:12px;font-weight:600">
         📎 Ajouter un fichier
       </label>
-      <input type="file" id="sb-pj-input" style="display:none" multiple onchange="uploadPJ(this,'${c.Id}')">
+      <input type="file" id="sb-pj-input" data-constat-id="${cId}" style="display:none" multiple onchange="uploadPJ(this,this.dataset.constatId)">
       <span id="sb-pj-status" style="font-size:11px;color:var(--sub)"></span>
     </div>
   `;
   document.getElementById('sb-body').appendChild(pjSection);
-  loadPJ('${c.Id}');
+  loadPJ(cId);
 
   document.getElementById('sb-overlay').classList.add('open');
   document.getElementById('sidebar').classList.add('open');
