@@ -2870,41 +2870,39 @@ async function exportPPTX() {
     const rowH = Math.min(0.6, 5.6/Math.max(rowLabels.length+1,1));
     const cols = colLabels.slice(0,maxCols);
 
-    // En-tête colonnes — fond vert foncé, texte blanc
+    // En-tête colonnes
     slide.addShape(pptx.ShapeType.rect,{x:2.5,y:startY,w:colW*cols.length,h:rowH,fill:{color:G}});
     cols.forEach((c,ci)=>{
       const lbl = c.length>11?c.substring(0,11)+'…':c;
-      addTxt(slide,lbl,2.5+ci*colW,startY,colW,rowH,{fontSize:9,color:W,bold:true,align:'center',wrap:true});
+      addTxt(slide,lbl,2.5+ci*colW,startY,colW,rowH,{fontSize:9,color:'FFFFFF',bold:true,align:'center',wrap:true});
     });
-
-    // En-tête ligne vide
     slide.addShape(pptx.ShapeType.rect,{x:0.2,y:startY,w:2.2,h:rowH,fill:{color:G}});
 
-    // Lignes
+    // Lignes données
     rowLabels.forEach((r,ri)=>{
       const y = startY+(ri+1)*rowH;
       const lbl = r.length>22?r.substring(0,22)+'…':r;
-      // Fond alterné pour lisibilité
-      slide.addShape(pptx.ShapeType.rect,{x:0.2,y,w:2.2,h:rowH,fill:{color:ri%2===0?'F9FAFB':'F3F4F6'}});
-      addTxt(slide,lbl,0.25,y,2.1,rowH,{fontSize:10,color:'1F2937',bold:true,valign:'middle'});
+      slide.addShape(pptx.ShapeType.rect,{x:0.2,y,w:2.2,h:rowH,fill:{color:ri%2===0?'F9FAFB':'F0F0F0'}});
+      addTxt(slide,lbl,0.25,y,2.1,rowH,{fontSize:11,color:'1F2937',bold:true});
       cols.forEach((c,ci)=>{
         const v = getVal(r,c);
-        const {bg,fg} = getColor(v,r,c);
-        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:y+0.03,w:colW-0.06,h:rowH-0.06,fill:{color:bg}});
-        const disp = v>0 ? String(v) : '·';
-        addTxt(slide,disp,2.5+ci*colW,y,colW,rowH,{fontSize:v>0?12:10,bold:v>0,color:v>0?fg:'CCCCCC',align:'center',valign:'middle'});
+        const clr = getColor(v,r,c);
+        const bgColor = typeof clr === 'object' ? clr.bg : clr;
+        const fgColor = typeof clr === 'object' ? clr.fg : (v>0?'FFFFFF':'AAAAAA');
+        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:y+0.03,w:colW-0.06,h:rowH-0.06,fill:{color:bgColor}});
+        addTxt(slide,v>0?String(v):'·',2.5+ci*colW,y,colW,rowH,{fontSize:v>0?13:11,bold:v>0,color:fgColor,align:'center'});
       });
     });
 
     // Ligne total
     const totY = startY+(rowLabels.length+1)*rowH;
-    if(totY < 7.2) {
-      slide.addShape(pptx.ShapeType.rect,{x:0.2,y:totY,w:2.2,h:rowH*0.8,fill:{color:G}});
-      addTxt(slide,'TOTAL',0.25,totY,2.1,rowH*0.8,{fontSize:10,color:W,bold:true,valign:'middle'});
+    if(totY<7.2){
+      slide.addShape(pptx.ShapeType.rect,{x:0.2,y:totY,w:2.2,h:rowH*0.85,fill:{color:G}});
+      addTxt(slide,'TOTAL',0.25,totY,2.1,rowH*0.85,{fontSize:11,color:'FFFFFF',bold:true});
       cols.forEach((c,ci)=>{
-        const tot = rowLabels.reduce((s,r)=>s+getVal(r,c),0);
-        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:totY+0.03,w:colW-0.06,h:rowH*0.8-0.06,fill:{color:O}});
-        addTxt(slide,String(tot),2.5+ci*colW,totY,colW,rowH*0.8,{fontSize:11,bold:true,color:W,align:'center',valign:'middle'});
+        const tot=rowLabels.reduce((s,r)=>s+getVal(r,c),0);
+        slide.addShape(pptx.ShapeType.rect,{x:2.5+ci*colW+0.03,y:totY+0.03,w:colW-0.06,h:rowH*0.85-0.06,fill:{color:O}});
+        addTxt(slide,String(tot),2.5+ci*colW,totY,colW,rowH*0.85,{fontSize:12,bold:true,color:'FFFFFF',align:'center'});
       });
     }
   };
