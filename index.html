@@ -722,6 +722,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
             <span style="font-size:12px;font-weight:600;color:#374151">Clôturés depuis plus de :</span>
             <select id="purge-periode" style="font-size:12px;padding:6px 10px;border:1.5px solid var(--bd);border-radius:7px">
+              <option value="0">🧪 Maintenant (test)</option>
               <option value="1">1 an</option>
               <option value="2" selected>2 ans</option>
               <option value="3">3 ans</option>
@@ -2216,12 +2217,14 @@ async function previewPurgePJ() {
     // Date limite
     const dateLimit = new Date();
     dateLimit.setFullYear(dateLimit.getFullYear() - ans);
+    if (ans === 0) dateLimit.setFullYear(dateLimit.getFullYear() + 100); // tout inclure
     const dateLimitStr = dateLimit.toISOString();
 
-    // Récupérer les constats clôturés avant la date limite
+    // Récupérer les constats clôturés (avant la date limite ou tous si test)
+    const filterDate = ans === 0 ? '' : ' and modifiedon lt ' + dateLimitStr;
     const constatUrl = DV_URL + '/api/data/v9.2/' + DV_TABLES.constats
       + '?$select=cr2c5_constatid,cr2c5_referenceduconstat,cr2c5_agence,modifiedon'
-      + '&$filter=cr2c5_statut eq \'Clôturé\' and modifiedon lt ' + dateLimitStr
+      + '&$filter=cr2c5_statut eq \'Clôturé\'' + filterDate
       + '&$top=500';
 
     const rr = await fetch(constatUrl, {
