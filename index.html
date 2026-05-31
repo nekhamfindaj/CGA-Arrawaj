@@ -806,6 +806,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
             <li>Cliquez sur 👁️ pour ouvrir le <strong>panneau de détail</strong> d'un constat</li>
             <li>Consultez la <strong>recommandation CGA</strong> et les actions attendues</li>
           </ol>
+          <div style="background:#F0FDF4;border-radius:8px;padding:10px;margin-top:8px;font-size:12px">
+            💡 <strong>Astuce :</strong> Depuis le Tableau de bord, cliquez directement sur une <strong>carte KPI</strong> (Criticité élevée, Nouveaux, En cours...) ou sur une <strong>cellule de la matrice heatmap</strong> — vous serez redirigé automatiquement vers les constats correspondants avec le filtre appliqué.
+          </div>
         </div>
 
         <div style="margin-bottom:16px">
@@ -864,13 +867,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
               <div style="font-size:11px;color:#6B7280">Criticité Élevée</div>
             </div>
             <div style="background:#FEF3C7;border-radius:8px;padding:10px;text-align:center">
-              <div style="font-size:22px;font-weight:700;color:#F59E0B">7 j</div>
+              <div style="font-size:22px;font-weight:700;color:#F59E0B">3 j</div>
               <div style="font-size:11px;color:#6B7280">Criticité Moyenne</div>
             </div>
             <div style="background:#F0FDF4;border-radius:8px;padding:10px;text-align:center">
-              <div style="font-size:22px;font-weight:700;color:#059669">30 j</div>
+              <div style="font-size:22px;font-weight:700;color:#059669">5 j</div>
               <div style="font-size:11px;color:#6B7280">Criticité Faible</div>
             </div>
+          </div>
+          <div style="background:#FEF3C7;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;color:#92400E">
+            ⚠️ <strong>Règle d'or :</strong> Tous les constats doivent être traités et clôturés <strong>avant le chargement de la semaine suivante</strong>. Le non-traitement génère une accumulation qui compromet la qualité du suivi et surcharge les équipes.
           </div>
         </div>
         <div>
@@ -893,9 +899,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
           <div style="background:var(--GL);border-radius:8px;padding:12px">
             <div style="font-weight:700;color:var(--G);margin-bottom:8px">✅ À faire</div>
             <ul style="padding-left:16px;line-height:2;color:#374151">
-              <li>Importer le canevas <strong>chaque semaine</strong></li>
+              <li>Consulter le TDB <strong>dès la connexion</strong></li>
               <li>Traiter les constats critiques <strong>sous 48h</strong></li>
-              <li>Joindre les <strong>preuves de correction</strong></li>
+              <li>Clôturer <strong>avant la semaine suivante</strong> pour éviter l'accumulation</li>
+              <li>Joindre les <strong>preuves de correction</strong> pour toute clôture</li>
               <li>Mettre à jour le statut à chaque <strong>avancement</strong></li>
               <li>Utiliser le PPTX pour les <strong>réunions terrain</strong></li>
             </ul>
@@ -917,8 +924,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
             <div style="font-size:11px;color:#6B7280">Taux de clôture cible</div>
           </div>
           <div style="background:#FEF3C7;border-radius:8px;padding:10px">
-            <div style="font-size:26px;font-weight:700;color:#F59E0B">≤ 48h</div>
-            <div style="font-size:11px;color:#6B7280">Délai criticité élevée</div>
+            <div style="font-size:26px;font-weight:700;color:#F59E0B">48h / 3j / 5j</div>
+            <div style="font-size:11px;color:#6B7280">Élevée / Moyenne / Faible</div>
           </div>
           <div style="background:#EFF6FF;border-radius:8px;padding:10px">
             <div style="font-size:26px;font-weight:700;color:#1D4ED8">100%</div>
