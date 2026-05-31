@@ -604,6 +604,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--G2);box-shadow:0 0 0 
               Les doublons email sont ignores automatiquement
             </div>
           </div>
+          <div id="users-import-log" style="display:none;margin-bottom:10px;padding:10px 12px;background:#F0FDF4;border:1px solid var(--bd);border-radius:8px;font-size:11px">
+            <div style="font-weight:700;color:var(--G);margin-bottom:6px">📋 Journal import utilisateurs</div>
+            <div id="users-import-log-body" style="font-family:monospace;font-size:10px;line-height:1.8;color:#374151"></div>
+          </div>
           <div id="rga-users-list"><div class="no-data">Chargement...</div></div>
           <div id="add-user-form" style="display:none;margin-top:12px;border-top:1px solid var(--bd);background:var(--GL);border-radius:10px;padding:16px">
             <div style="font-size:12px;font-weight:600;color:var(--G);margin-bottom:12px">➕ Nouvel utilisateur</div>
@@ -2149,49 +2153,66 @@ function renderRGAUsers(){
 //  IMPORT UTILISATEURS EXCEL
 // ══════════════════════════════════
 async function importUsersExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  input.value = '';
+  const logEl   = document.getElementById('users-import-log');
+  const logBody = document.getElementById('users-import-log-body');
+  const addLog  = (msg, color='#374151') => {
+    if(logEl)   logEl.style.display = 'block';
+    if(logBody) logBody.innerHTML += '<div style="color:'+color+'">'+msg+'</div>';
+    console.log('[ImportUsers]', msg);
+  };
 
-  showToast('⏳ Import en cours...', '');
+  const file = input.files[0];
+  if (!file) { addLog('❌ Aucun fichier sélectionné','#DC2626'); return; }
+  input.value = '';
+  if(logBody) logBody.innerHTML = '';
+  addLog('📂 Fichier : ' + file.name);
+  addLog('📏 Taille : ' + Math.round(file.size/1024) + ' KB');
 
   const reader = new FileReader();
+  reader.onerror = () => addLog('❌ Erreur lecture fichier','#DC2626');
   reader.onload = async e => {
     try {
+      addLog('🔍 Lecture Excel...');
       const wb = XLSX.read(e.target.result, { type: 'binary' });
+      addLog('📑 Feuilles : ' + wb.SheetNames.join(', '));
+
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      addLog('📊 Lignes brutes : ' + rows.length);
 
-      // Détecter ligne d'en-tête (chercher "email" ou "role")
+      // Détecter ligne d'en-tête
       let hi = 0;
       for (let i = 0; i < Math.min(5, rows.length); i++) {
         const r = rows[i].map(c => String(c).toLowerCase());
-        if (r.some(c => c.includes('email') || c.includes('role') || c.includes('rôle'))) { hi = i; break; }
+        if (r.some(c => c.includes('email') || c.includes('role') || c.includes('rôle') || c.includes('code'))) { hi = i; break; }
       }
+      addLog('📋 En-tête ligne ' + hi + ' : ' + rows[hi].filter(c=>c).join(' | '));
 
-      // Détecter les colonnes par en-tête
       const headers = rows[hi].map(c => String(c).toLowerCase().trim());
       const col = (kw) => headers.findIndex(h => h.includes(kw));
       const iCode   = col('code') >= 0 ? col('code') : col('rga') >= 0 ? col('rga') : 0;
       const iEmail  = col('email') >= 0 ? col('email') : col('mail') >= 0 ? col('mail') : 1;
       const iNom    = col('nom') >= 0 ? col('nom') : col('name') >= 0 ? col('name') : 2;
       const iRole   = col('role') >= 0 ? col('role') : col('rôle') >= 0 ? col('rôle') : 3;
-      const iRegion = col('region') >= 0 ? col('region') : col('région') >= 0 ? col('région') : 4;
+      addLog('🗂️ Colonnes → Code:'+iCode+' Email:'+iEmail+' Nom:'+iNom+' Role:'+iRole);
 
       const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c !== ''));
-      const roleMap = { 'admin': 0, 'dr': 1, 'rga': 2, 'administrateur': 0, 'directeur': 1, 'controleur': 2, 'contrôleur': 2 };
+      addLog('📝 Lignes de données : ' + dataRows.length);
 
+      if(dataRows.length === 0) { addLog('⚠️ Aucune donnée trouvée — vérifiez le format','#F59E0B'); return; }
+      addLog('🔎 Exemple ligne 1 : ' + dataRows[0].slice(0,5).join(' | '));
+
+      const roleMap = { 'admin':1, 'dr':3, 'rga':2, 'administrateur':1, 'directeur':3, 'controleur':2, 'contrôleur':2 };
       let ok = 0, skip = 0, err = 0;
+
       for (const r of dataRows) {
-        const code  = String(r[iCode]  || '').trim();
-        const email = String(r[iEmail] || '').trim().toLowerCase();
-        const nom   = String(r[iNom]   || '').trim();
-        const roleRaw = String(r[iRole] || 'rga').trim().toLowerCase();
-        const role  = roleMap[roleRaw] ?? 2;
+        const code    = String(r[iCode]  || '').trim();
+        const email   = String(r[iEmail] || '').trim().toLowerCase();
+        const nom     = String(r[iNom]   || '').trim();
+        const roleRaw = String(r[iRole]  || 'rga').trim().toLowerCase();
+        const role    = roleMap[roleRaw] ?? 2;
 
         if (!email || !email.includes('@')) { skip++; continue; }
-
-        // Vérifier doublon
         if (S.rgaUsers.some(u => (u.EmailUtilisateur || '').toLowerCase() === email)) { skip++; continue; }
 
         try {
@@ -2202,15 +2223,23 @@ async function importUsersExcel(input) {
             cr2c5_role:         role
           });
           ok++;
-        } catch(e) { err++; console.warn('Import user error:', email, e.message); }
+        } catch(ex) {
+          err++;
+          addLog('❌ Erreur : ' + email + ' → ' + ex.message, '#DC2626');
+        }
       }
 
-      const msg = '✅ ' + ok + ' utilisateurs importés' + (skip > 0 ? ' · ' + skip + ' ignorés' : '') + (err > 0 ? ' · ' + err + ' erreurs' : '');
-      showToast(msg, ok > 0 ? 'ok' : 'err');
+      addLog('');
+      addLog('✅ Chargés : ' + ok, '#059669');
+      if(skip > 0) addLog('⏭️ Ignorés (doublons/invalides) : ' + skip, '#6B7280');
+      if(err  > 0) addLog('❌ Erreurs : ' + err, '#DC2626');
+
+      showToast('✅ ' + ok + ' utilisateurs importés', ok > 0 ? 'ok' : 'err');
       await loadRGAUsers();
       renderRGAUsers();
-    } catch(e) {
-      showToast('❌ Erreur lecture fichier: ' + e.message, 'err');
+    } catch(ex) {
+      addLog('❌ Erreur fatale : ' + ex.message, '#DC2626');
+      showToast('❌ Erreur : ' + ex.message, 'err');
     }
   };
   reader.readAsBinaryString(file);
